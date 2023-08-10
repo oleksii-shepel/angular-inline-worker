@@ -1,0 +1,21 @@
+{
+  "name": "@nygma/web-workers",
+  "version": "1.0.1",
+  "description": "Inline cancellable web-workers with progress notification",
+  "main": "public-api.d.ts",
+  "scripts": {
+    "build": "ng build"
+  },
+  "keywords":[
+    "worker",
+    "webworker",
+    "asynchronous",
+    "inline",
+    "cancellable"
+  ],
+  "author": "Oleksii Shepel",
+  "license": "MIT",
+  "dependencies": {
+    "tslib": "^2.6.1"
+  }
+}

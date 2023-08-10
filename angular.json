@@ -3,5 +3,38 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
+    "@nygma/web-workers": {
+      "projectType": "library",
+      "root": "projects/nygma/web-workers",
+      "sourceRoot": "projects/nygma/web-workers/src",
+      "prefix": "lib",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:ng-packagr",
+          "options": {
+            "project": "projects/nygma/web-workers/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "tsConfig": "projects/nygma/web-workers/tsconfig.lib.prod.json"
+            },
+            "development": {
+              "tsConfig": "projects/nygma/web-workers/tsconfig.lib.json"
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "tsConfig": "projects/nygma/web-workers/tsconfig.spec.json",
+            "polyfills": [
+              "zone.js",
+              "zone.js/testing"
+            ]
+          }
+        }
+      }
+    }
   }
 }

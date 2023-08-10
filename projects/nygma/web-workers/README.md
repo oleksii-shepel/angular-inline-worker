@@ -1,0 +1,70 @@
+# @nygma/web-workers
+
+<p align="justify">
+A web worker is a JavaScript process that runs in the background of a webpage, without affecting the performance of the page. You can use most standard JavaScript features inside a web worker, but you can’t directly affect the parent page.
+</p>
+
+<p align="justify">
+Inline web workers are web workers that are created in the same web page context or on the fly, without requiring a separate JavaScript file. Blobs and object URLs are used under the hood to create inline web workers from functions or strings. Web workers allow you to perform true multi-threading and concurrency in your web applications.
+</p>
+
+<p align="justify">
+<b>@nygma/web-workers</b> is a powerful Javascript library that helps you interact seamlessly with web workers. The way you work with web workers is reminiscent of the use of thread objects in modern OOP languages such as C# or Java. Below is a code example of task definition which will be executed by web worker. As you can see it is a simple function defined in global scope, which takes a WorkerArgs structure as a parameter. This structure contains an input object which can be of any cloneable object type and helper functions that allow task to inform the outside world about its progress and result. Possibility to cancel long running tasks is also embedded into the library. 
+</p>
+
+```typescript
+export interface WorkerArgs {
+  data: any;
+  done: Function;
+  cancelled?: Function;
+  progress?: Function;
+}
+
+function task(args: WorkerArgs) {
+  const cancelled = args.cancelled || (() => false);
+  const progress = args.progress || (() => {});
+  const done = args.done || (() => {});
+  const data = args.data;
+
+  progress(0);
+  let value = 0;
+  for (var i = 2, len = data / 2 + 1; i < len; i++) {
+    if(i / len - value > 0.01) {
+      value = i / len;
+      progress(value);
+
+      if(cancelled()) {
+        return;
+      }
+    }
+    if (data % i === 0) {
+      progress(1);
+      done(false);
+    }
+  }
+  progress(1);
+  done(true);
+}
+```
+<p align="justify">
+Next is an example of instantiation of inline worker. Сancellable and observable functions are task decorators. They expose functions discussed above that are available within task body. As they are defined in worker scope, we need to declare them as typescript variables. To start task execution we have to call run method of the worker. This method returns a promise object. Of course you can create multiple workers and run them parallel. In this case you have to use Promise.all to wait for multiple asynchronous tasks to complete before doing something else.
+</p>
+
+```typescript
+declare var cancellable: any, observable: any;
+let worker: InlineWorker = new InlineWorker(() => cancellable(observable(task)));
+
+let promise = this.worker.progress((value) => console.log(value)).run({data: 1234567890});
+await Promise.all([worker])
+```
+<p align="justify">
+The worker itself contains additionally some auxiliary methods that can brighten up your working routines. For instance, you can inject needed global functions into worker. Be aware, that this functionality is a bit sensitive to the method placement. So the methods from other files are decorated by webpack and that's why they cannot be used within worker. If you do not like the idea of cancellable workers or you have troubles with SharedBufferArray creation you can use terminate method which will silently kill the worker. To observe the progress of the execution, the callback function have to be passed as a parameter to progress method call. 
+</p>
+
+<p align="justify">
+Have fun with programming!
+</p>
+
+<p align="justify">
+This project is inspired by <a href="https://github.com/adambabik/inline-worker">inline-worker</a> from Adam Babik, but there are some conceptual differences. Hope, Adam forgives a little plagiarism.
+</p>
