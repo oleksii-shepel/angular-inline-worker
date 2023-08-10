@@ -1,5 +1,9 @@
 # @nygma/web-workers
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/oleksii-shepel/angular-inline-worker/master/projects/nygma/web-workers/emblem.png" alt="nygma" width="400"/>
+</p>
+
 <p align="justify">
 A web worker is a JavaScript process that runs in the background of a webpage, without affecting the performance of the page. You can use most standard JavaScript features inside a web worker, but you can’t directly affect the parent page.
 </p>
@@ -9,7 +13,7 @@ Inline web workers are web workers that are created in the same web page context
 </p>
 
 <p align="justify">
-<b>@nygma/web-workers</b> is a powerful Javascript library that helps you interact seamlessly with web workers. The way you work with web workers is reminiscent of the use of thread objects in modern OOP languages such as C# or Java. Below is a code example of task definition which will be executed by web worker. As you can see it is a simple function defined in global scope, which takes a WorkerArgs structure as a parameter. This structure contains an input object which can be of any cloneable object type and helper functions that allow task to inform the outside world about its progress and result. Possibility to cancel long running tasks is also embedded into the library. 
+<b>@nygma/web-workers</b> is a powerful Javascript library that helps you interact seamlessly with web workers. The way you work with web workers is reminiscent of the use of thread objects in modern OOP languages such as C# or Java. Below is a code example of task definition which will be executed by web worker. As you can see it is a common function defined in global scope, which takes a WorkerArgs structure as a parameter. This structure contains an input object which can be of any cloneable object type and helper functions that allow task to inform the outside world about its progress and result. Possibility to cancel long running tasks is also embedded into the library. 
 </p>
 
 ```typescript
@@ -62,7 +66,7 @@ The worker itself contains additionally some auxiliary methods that can brighten
 </p>
 
 <p align="justify">
-Have fun with programming!
+Have fun with programming! I would like to think that this library will make it easier to write concurrent code, which is still considered a gimmick for the browser.
 </p>
 
 <p align="justify">
