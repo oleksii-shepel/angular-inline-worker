@@ -3,7 +3,7 @@
   "compileOnSave": false,
   "compilerOptions": {
     "paths": {
-      "@nygma/web-workers": [
+      "nygma-web-workers": [
         "dist/nygma/web-workers"
       ]
     },

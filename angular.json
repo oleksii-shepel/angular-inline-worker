@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "@nygma/web-workers": {
+    "nygma-web-workers": {
       "projectType": "library",
       "root": "projects/nygma/web-workers",
       "sourceRoot": "projects/nygma/web-workers/src",

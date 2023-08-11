@@ -1,12 +1,12 @@
 {
-  "name": "@nygma/web-workers",
-  "version": "1.0.1",
+  "name": "nygma-web-workers",
+  "version": "1.0.4",
   "description": "Inline cancellable web-workers with progress notification",
   "main": "public-api.d.ts",
   "scripts": {
     "build": "ng build"
   },
-  "keywords":[
+  "keywords": [
     "worker",
     "webworker",
     "asynchronous",
