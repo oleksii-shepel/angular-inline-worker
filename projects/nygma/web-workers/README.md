@@ -3,6 +3,10 @@
 <p align="center">
   <img src="https://raw.githubusercontent.com/oleksii-shepel/angular-inline-worker/master/projects/nygma/web-workers/emblem.png" alt="nygma" width="400"/>
 </p>
+  
+  ![npm version](https://badge.fury.io/js/nygma-web-workers.svg)
+  ![npm](https://img.shields.io/npm/dt/nygma-web-workers.svg)
+  ![npm](https://img.shields.io/npm/l/nygma-web-workers.svg)
 
 <p align="justify">
 A web worker is a JavaScript process that runs in the background of a webpage, without affecting the performance of the page. You can use most standard JavaScript features inside a web worker, but you can’t directly affect the parent page.

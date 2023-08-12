@@ -1,13 +1,14 @@
 import { CancellationToken } from "./cancellationToken";
-import { cancellable, observable } from "./decorators";
+import { cancellable, observable, subscribable, result } from "./decorators";
 
 
 
 export interface WorkerArgs {
   data: any;
-  done: Function;
-  cancelled: Function;
+  cancelled: boolean;
+  next: Function;
   progress: Function;
+  done: Function;
 }
 
 
@@ -25,6 +26,7 @@ export class InlineWorker {
   private fnBody!: string;
   private worker!: Worker | null;
   private onprogress!: ((data: number) => void) | null;
+  private onnext!: ((data: any) => void) | null;
   private injected!: string[];
 
   constructor(task: Function) {
@@ -37,9 +39,9 @@ export class InlineWorker {
     }
 
     this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
-    this.fnBody = 'self.onmessage = function (event) { self.cancellationBuffer = event.data.cancellationBuffer ?? null; self.postMessage((cancellable(observable(' + task.name + ')))(event.data)) };';
-    this.worker = this.onprogress = null;
-    this.inject(task, cancellable, observable, result);
+    this.fnBody = 'self.onmessage = function (event) { self.cancellationBuffer = event.data.cancellationBuffer ?? null; self.postMessage({type: "done", value: (cancellable(observable(subscribable(result(' + task.name + ')))))(event.data)}); };';
+    this.worker = this.onprogress = this.onnext = null;
+    this.inject(task, cancellable, observable, subscribable, result);
   }
 
   public static terminate(workers: InlineWorker[]): void {
@@ -66,14 +68,20 @@ export class InlineWorker {
       this.worker!.onmessage = (e: MessageEvent) => {
         if(e.data?.type === 'done') { resolve({status: 'success', value: e.data.value}); }
         else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
-        else if (e.data?.type === 'cancelled') { resolve({status: 'cancelled', value: e.data.value}); }
+        else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
+        else if (e.data?.type === 'cancelled') { resolve({status: 'cancelled'}); }
       }
-      this.worker!.onerror = (e: ErrorEvent) => reject(e.error);
+      this.worker!.onerror = (e: ErrorEvent) => reject({status: 'error', error: e.error});
     });
   }
 
   progress(fn: (data: any) => void): InlineWorker {
     this.onprogress = fn;
+    return this;
+  }
+
+  subscribe(fn: (data: any) => void): InlineWorker {
+    this.onnext = fn;
     return this;
   }
 
@@ -93,12 +101,6 @@ export class InlineWorker {
     }
     return this;
   }
-}
-
-
-
-export function result(value: any) {
-  self.postMessage({type: 'done', value});
 }
 
 
