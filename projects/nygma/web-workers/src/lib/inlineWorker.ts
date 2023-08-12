@@ -38,9 +38,9 @@ export class InlineWorker {
 
     this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
     this.fnBody = `
-      const func = (cancellable(observable(subscribable(${task.toString()}))));
+      const func = (${cancellable.name}(${observable.name}(${subscribable.name}(${task.toString()}))));
       self.onmessage = function (event) {
-        const promise = promisify(func, event.data);
+        const promise = ${promisify.name}(func, event.data);
         self.cancellationBuffer = event.data.cancellationBuffer ?? null;
         promise.then(value => self.postMessage({type: "done", value: value}));
       };`;
