@@ -26,14 +26,10 @@ export interface WorkerArgs {
   done: Function;
   cancelled: Function;
   progress: Function;
+  next: Function;
 }
 
-export function task(args: WorkerArgs) {
-  const cancelled = args.cancelled || (() => false);
-  const progress = args.progress || (() => {});
-  const done = args.done || (() => {});
-  const data = args.data;
-
+export function task({data, progress, cancelled, done}: WorkerArgs) {
   progress(0);
   let value = 0;
   for (var i = 2, len = data / 2 + 1; i < len; i++) {
@@ -48,6 +44,7 @@ export function task(args: WorkerArgs) {
     if (data % i === 0) {
       progress(1);
       done(false);
+      return;
     }
   }
   progress(1);
