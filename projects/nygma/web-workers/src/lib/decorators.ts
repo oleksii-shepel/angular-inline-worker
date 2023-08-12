@@ -4,13 +4,15 @@
 export function cancellable(func: Function) {
   const buffer = (self as any).cancellationBuffer ?? new ArrayBuffer(4);
 
-  return (args: any) => func({...args, get cancelled() : boolean {
+  function cancelled() {
     let item = new Int32Array(buffer)[0];
     if(item === 1) {
       self.postMessage({type: 'cancelled', value: 'Worker was cancelled from main thread.'});
     }
     return item === 1;
-  }});
+  }
+
+  return (args: any) => func({...args, cancelled});
 }
 
 
