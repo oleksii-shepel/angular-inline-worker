@@ -1,14 +1,15 @@
 import { CancellationToken } from "./cancellationToken";
-import { cancellable, observable, subscribable, result } from "./decorators";
+import { cancellable, observable, subscribable, promisify } from "./decorators";
 
 
 
 export interface WorkerArgs {
   data: any;
-  cancelled: boolean;
+  cancelled: Function;
   next: Function;
   progress: Function;
   done: Function;
+  error: Function;
 }
 
 
@@ -30,14 +31,21 @@ export class InlineWorker {
   private injected!: string[];
 
   constructor(task: Function) {
+
     if (!isWorkerSupported()) {
       throw new Error('Web Worker is not supported');
     }
 
     this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
-    this.fnBody = 'const func = (' + task.toString() + '); self.onmessage = function (event) { self.cancellationBuffer = event.data.cancellationBuffer ?? null; self.postMessage({type: "done", value: (cancellable(observable(subscribable(result(func)))))(event.data)}); };';
+    this.fnBody = `
+      const func = (cancellable(observable(subscribable(${task.toString()}))));
+      self.onmessage = function (event) {
+        const promise = promisify(func, event.data);
+        self.cancellationBuffer = event.data.cancellationBuffer ?? null;
+        promise.then(value => self.postMessage({type: "done", value: value}));
+      };`;
     this.worker = this.onprogress = this.onnext = null;
-    this.inject(cancellable, observable, subscribable, result);
+    this.inject(cancellable, observable, subscribable, promisify);
   }
 
   public static terminate(workers: InlineWorker[]): void {

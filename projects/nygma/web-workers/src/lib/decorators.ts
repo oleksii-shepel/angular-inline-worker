@@ -37,10 +37,13 @@ export function observable(func: Function) {
 
 
 
-export function result(func: Function) {
-  function done(value: any) {
-    self.postMessage({type: 'done', value});
-  }
+export function promisify(func: Function, args: object) {
+  const promise = new Promise((resolve, reject) => {
+    const result = func({...args, done: resolve, error: reject});
+    if (result && result.then) {
+      result.then(resolve, reject);
+    }
+  });
 
-  return (args: any) => func({...args, done});
+  return promise;
 }

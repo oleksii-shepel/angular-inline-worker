@@ -17,7 +17,7 @@ Inline web workers are web workers that are created in the same web page context
 </p>
 
 <p align="justify">
-<b>nygma-web-workers</b> is a powerful Javascript library that helps you interact seamlessly with web workers. The way you work with web workers is reminiscent of the use of thread objects in modern OOP languages such as C# or Java. Below is a code example of task definition which will be executed by web worker. As you can see it is a common function defined in global scope, which takes a WorkerArgs structure as a parameter. This structure contains an input object which can be of any cloneable object type and helper functions that allow task to inform the outside world about its progress and result. Possibility to cancel long running tasks is also embedded into the library. 
+<b>nygma-web-workers</b> is a powerful Javascript library that helps you interact seamlessly with web workers. The way you work with web workers is reminiscent of the use of thread objects in modern OOP languages such as C# or Java. Below is a code example of task definition which will be executed by web worker. As you can see it is a common function defined in global scope, which takes a WorkerArgs structure as a parameter. This structure contains an input object which can be of any cloneable object type and helper functions that allow task to communicate with the outside world. This code checks if the given number is prime or not.
 </p>
 
 ```typescript
@@ -52,6 +52,31 @@ export function task({data, progress, cancelled, done}: WorkerArgs) {
 }
 ```
 <p align="justify">
+Another example of library use is an async function call. Code below shows the possible definition of timer routine. As you may noticed, this is not the case of progress notification, instead we use next method to inform the main thread about current status of a timer. Task cancellation is an option. Async function support will be probably added in further versions, currently it deeply depends on results of transpilation by typescript compiler.
+</p>
+
+```typescript
+export function timer({data, done, next, cancelled}: WorkerArgs) {
+  next('timer set to ' + data + 'ms');
+
+  let interval = setInterval(() => {
+    data -= 1000;
+    next('elapsed ' + data + 'ms');
+
+    if(data <= 0) {
+      clearInterval(interval);
+      next('timer completed');
+      done();
+    }
+    if(cancelled()) {
+      clearInterval(interval);
+      next('timer cancelled');
+    }
+  }, 1000);
+}
+```
+
+<p align="justify">
 Next is an example of instantiation of inline worker. To start task execution we have to call run method of the worker. This method returns a promise object. Of course you can create multiple workers and run them in parallel. In this case you have to use Promise.all to wait for multiple asynchronous tasks to complete before doing something else.
 </p>
 
@@ -66,9 +91,13 @@ The worker itself contains additionally some auxiliary methods that can brighten
 </p>
 
 <p align="justify">
-Have fun with programming! I would like to think that this library will make it easier to write concurrent code, which is still considered a gimmick for the browser.
+I would like to think that this library will make it easier to write concurrent code, which is still considered a gimmick for the browser.
 </p>
 
 <p align="justify">
-This project is inspired by <a href="https://github.com/adambabik/inline-worker">inline-worker</a> from Adam Babik, but there are some conceptual differences. Hope, Adam forgives a little plagiarism.
+This project is inspired by <a href="https://github.com/adambabik/inline-worker">inline-worker</a> from Adam Babik, but there are some conceptual differences. I have a little hope that Adam forgives a little plagiarism.
+</p>
+
+<p align="justify">
+Stay tuned, and have fun with programming! 
 </p>
