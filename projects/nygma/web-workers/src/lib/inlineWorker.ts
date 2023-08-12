@@ -34,14 +34,10 @@ export class InlineWorker {
       throw new Error('Web Worker is not supported');
     }
 
-    if(!task.toString().match(/function\s*\w+\s*\(/)) {
-      throw new Error('Arrow function expressions as well as anonymous functions are not supported');
-    }
-
     this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
-    this.fnBody = 'self.onmessage = function (event) { self.cancellationBuffer = event.data.cancellationBuffer ?? null; self.postMessage({type: "done", value: (cancellable(observable(subscribable(result(' + task.name + ')))))(event.data)}); };';
+    this.fnBody = 'const func = (' + task.toString() + '); self.onmessage = function (event) { self.cancellationBuffer = event.data.cancellationBuffer ?? null; self.postMessage({type: "done", value: (cancellable(observable(subscribable(result(func)))))(event.data)}); };';
     this.worker = this.onprogress = this.onnext = null;
-    this.inject(task, cancellable, observable, subscribable, result);
+    this.inject(cancellable, observable, subscribable, result);
   }
 
   public static terminate(workers: InlineWorker[]): void {
