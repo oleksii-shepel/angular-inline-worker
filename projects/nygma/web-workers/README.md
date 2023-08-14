@@ -1,7 +1,7 @@
 # nygma-web-workers
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/oleksii-shepel/angular-inline-worker/master/projects/nygma/web-workers/emblem.png" alt="nygma" width="400"/>
+  <img src="https://raw.githubusercontent.com/oleksii-shepel/angular-inline-worker/master/projects/nygma/web-workers/emblem.png" alt="nygma" width="600"/>
 </p>
   
   ![npm version](https://badge.fury.io/js/nygma-web-workers.svg)
@@ -83,11 +83,11 @@ Next is an example of instantiation of inline worker. To start task execution we
 ```typescript
 let worker: InlineWorker = new InlineWorker(task);
 
-let promise = this.worker.progress((value) => console.log(value)).run({data: 1234567890});
+let promise = this.worker.progress((value) => console.log(value)).run(1234567890);
 await Promise.all([worker])
 ```
 <p align="justify">
-The worker itself contains additionally some auxiliary methods that can brighten up your working routines. For instance, you can inject needed global functions into worker. Be aware, that this functionality is a bit sensitive to the method placement. So the methods from other files are decorated by webpack and that's why they cannot be used within worker. If you do not like the idea of cancellable workers or you have troubles with SharedBufferArray creation you can use terminate method which will silently kill the worker. To observe the progress of the execution, the callback function have to be passed as a parameter to progress method call. 
+The worker itself contains additionally some auxiliary methods that can brighten up your working routines. For instance, you can inject needed global functions into worker. Be aware, that this functionality is a bit sensitive to the method placement. So the methods from other files are decorated by webpack and that's why they cannot be used within worker. If you do not like the idea of cancellable workers or you have troubles with SharedBufferArray creation you can use terminate method which will silently kill the worker. To observe the progress of the execution, the callback function have to be passed as a parameter to progress method. 
 </p>
 
 <p align="justify">
@@ -95,9 +95,9 @@ I would like to think that this library will make it easier to write concurrent 
 </p>
 
 <p align="justify">
-This project is inspired by <a href="https://github.com/adambabik/inline-worker">inline-worker</a> from Adam Babik, but there are some conceptual differences. I have a little hope that Adam forgives a little plagiarism.
+This project is inspired by <a href="https://github.com/adambabik/inline-worker">inline-worker</a> from Adam Babik, but be aware that there are some conceptual differences. You only have to choose the right library according to your needs.
 </p>
 
 <p align="justify">
-Stay tuned, and have fun with programming! 
+Stay tuned, and keep having fun with programming! Lines of code, like chapters in a book, come together to tell a story of your digital adventures.
 </p>
