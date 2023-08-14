@@ -14,6 +14,10 @@ export interface WorkerArgs {
 
 
 
+export type WorkerTask = (args: WorkerArgs) => any | Promise<any>;
+
+
+
 export interface WorkerResult {
   status: 'success' | 'cancelled' | 'error';
   value?: any;
@@ -30,7 +34,7 @@ export class InlineWorker {
   private onnext!: ((data: any) => void) | null;
   private injected!: string[];
 
-  constructor(task: Function) {
+  constructor(task: WorkerTask) {
 
     if (!isWorkerSupported()) {
       throw new Error('Web Worker is not supported');
@@ -62,18 +66,18 @@ export class InlineWorker {
     }
   }
 
-  public run(message: any, transferList?: Transferable[]): Promise<any> {
+  public run(data: any, transferList?: Transferable[]): Promise<any> {
 
     let blob = new Blob([this.fnBody].concat(this.injected), { type: 'application/javascript' });
     this.worker = new Worker(URL.createObjectURL(blob));
 
-    this.worker.postMessage(this.fnBody.includes('cancellable')? {...message, cancellationBuffer: this.cancellationToken?.buffer} : message, transferList as any);
+    this.worker.postMessage(this.fnBody.includes(cancellable.name)? { data: data, cancellationBuffer: this.cancellationToken?.buffer} : { data: data }, transferList as any);
     return new Promise((resolve, reject) => {
       this.worker!.onmessage = (e: MessageEvent) => {
         if(e.data?.type === 'done') { resolve({status: 'success', value: e.data.value}); }
         else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
         else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
-        else if (e.data?.type === 'cancelled') { resolve({status: 'cancelled'}); }
+        else if (e.data?.type === 'cancelled') { this.cancellationToken?.reset(); resolve({status: 'cancelled'}); }
       }
       this.worker!.onerror = (e: ErrorEvent) => reject({status: 'error', error: e.error});
     });
