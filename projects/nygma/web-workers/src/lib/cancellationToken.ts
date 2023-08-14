@@ -10,7 +10,7 @@ export class CancellationToken {
       console.warn("CancellationToken is not supported in this environment. Please add following two headers to the top level document: 'Cross-Origin-Embedder-Policy': 'require-corp'; 'Cross-Origin-Opener-Policy': 'same-origin';");
     }
 
-    this.shared = crossOriginIsolated ? new SharedArrayBuffer(4): new ArrayBuffer(4);
+    this.shared = crossOriginIsolated? new SharedArrayBuffer(4): new ArrayBuffer(4);
     this.array = new Int32Array(this.shared);
   }
 
