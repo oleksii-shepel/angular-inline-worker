@@ -28,12 +28,12 @@ export interface WorkerResult {
 
 export class InlineWorker {
   private cancellationToken: CancellationToken | null;
-  private fnBody!: string;
-  private worker!: Worker | null;
-  private onprogress!: ((data: number) => void) | null;
-  private onnext!: ((data: any) => void) | null;
-  private injected!: string[];
-
+  private fnBody: string;
+  private worker: Worker | null;
+  private onprogress: ((data: number) => void) | null;
+  private onnext: ((data: any) => void) | null;
+  private injected: string[];
+  private promise: Promise<any> | null;
   constructor(task: WorkerTask) {
 
     if (!isWorkerSupported()) {
@@ -48,7 +48,8 @@ export class InlineWorker {
         self.cancellationBuffer = event.data.cancellationBuffer ?? null;
         promise.then(value => self.postMessage({type: "done", value: value}));
       };`;
-    this.worker = this.onprogress = this.onnext = null;
+    this.worker = this.onprogress = this.onnext = this.promise = null;
+    this.injected  = [];
     this.inject(cancellable, observable, subscribable, promisify);
   }
 
@@ -67,20 +68,27 @@ export class InlineWorker {
   }
 
   public run(data: any, transferList?: Transferable[]): Promise<any> {
+    if(!this.promise) {
+      let blob = new Blob([this.fnBody].concat(this.injected), { type: 'application/javascript' });
+      this.worker = new Worker(URL.createObjectURL(blob));
 
-    let blob = new Blob([this.fnBody].concat(this.injected), { type: 'application/javascript' });
-    this.worker = new Worker(URL.createObjectURL(blob));
+      this.worker.postMessage(this.fnBody.includes(cancellable.name)? { data: data, cancellationBuffer: this.cancellationToken?.buffer} : { data: data }, transferList as any);
+      this.promise = new Promise((resolve, reject) => {
+        this.worker!.onmessage = (e: MessageEvent) => {
+          if(e.data?.type === 'done') { this.cancellationToken?.reset(); resolve({status: 'success', value: e.data.value}); this.promise = null; }
+          else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
+          else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
+          else if (e.data?.type === 'cancelled') { this.cancellationToken?.reset(); resolve({status: 'cancelled'}); this.promise = null; }
+        }
+        this.worker!.onerror = (e: ErrorEvent) => { this.cancellationToken?.reset(); reject({status: 'error', error: e.error}); this.promise = null; };
+      });
+    }
 
-    this.worker.postMessage(this.fnBody.includes(cancellable.name)? { data: data, cancellationBuffer: this.cancellationToken?.buffer} : { data: data }, transferList as any);
-    return new Promise((resolve, reject) => {
-      this.worker!.onmessage = (e: MessageEvent) => {
-        if(e.data?.type === 'done') { this.cancellationToken?.reset(); resolve({status: 'success', value: e.data.value}); }
-        else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
-        else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
-        else if (e.data?.type === 'cancelled') { this.cancellationToken?.reset(); resolve({status: 'cancelled'}); }
-      }
-      this.worker!.onerror = (e: ErrorEvent) => { this.cancellationToken?.reset(); reject({status: 'error', error: e.error}) };
-    });
+    return this.promise;
+  }
+
+  running() {
+    return !!this.promise;
   }
 
   progress(fn: (data: any) => void): InlineWorker {
