@@ -74,12 +74,12 @@ export class InlineWorker {
     this.worker.postMessage(this.fnBody.includes(cancellable.name)? { data: data, cancellationBuffer: this.cancellationToken?.buffer} : { data: data }, transferList as any);
     return new Promise((resolve, reject) => {
       this.worker!.onmessage = (e: MessageEvent) => {
-        if(e.data?.type === 'done') { resolve({status: 'success', value: e.data.value}); }
+        if(e.data?.type === 'done') { this.cancellationToken?.reset(); resolve({status: 'success', value: e.data.value}); }
         else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
         else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
         else if (e.data?.type === 'cancelled') { this.cancellationToken?.reset(); resolve({status: 'cancelled'}); }
       }
-      this.worker!.onerror = (e: ErrorEvent) => reject({status: 'error', error: e.error});
+      this.worker!.onerror = (e: ErrorEvent) => { this.cancellationToken?.reset(); reject({status: 'error', error: e.error}) };
     });
   }
 

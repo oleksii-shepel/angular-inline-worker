@@ -1,5 +1,5 @@
 // Karma configuration
-// Generated on Mon Aug 14 2023 10:45:18 GMT+0300 (Eastern European Summer Time)
+// Generated on Tue Aug 15 2023 10:32:00 GMT+0300 (Eastern European Summer Time)
 
 module.exports = function(config) {
   config.set({
@@ -7,25 +7,15 @@ module.exports = function(config) {
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: '',
 
-    karmaTypescriptConfig: {
-      compilerOptions: {
-        allowJs: true,
-        lib: ["es2022", "dom"],
-        target: "es2022",
-        sourceMap: true
-      },
-      coverageOptions:{
-        instrumentation: false
-      }
-    },
+
     // frameworks to use
     // available frameworks: https://www.npmjs.com/search?q=keywords:karma-adapter
-    frameworks: ['jasmine', 'karma-typescript'],
+    frameworks: ['jasmine'],
 
 
     // list of files / patterns to load in the browser
     files: [
-      'projects/nygma/web-workers/src/**/*.ts'
+      './dist/nygma-web-workers/src/**/*.js'
     ],
 
 
@@ -37,14 +27,13 @@ module.exports = function(config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://www.npmjs.com/search?q=keywords:karma-preprocessor
     preprocessors: {
-      '**/*.ts': 'karma-typescript'
     },
 
 
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://www.npmjs.com/search?q=keywords:karma-reporter
-    reporters: ['progress', 'karma-typescript'],
+    reporters: ['progress'],
 
 
     // web server port

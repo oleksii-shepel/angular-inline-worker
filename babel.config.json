@@ -1,0 +1,28 @@
+{
+  "presets": [
+    ["@babel/preset-env", {
+      // "compilerOptions": {
+      //   "experimentalDecorators": true
+      // },
+      "useBuiltIns": "entry",
+      "corejs": "3.8",
+      "targets": {
+        "browsers": "defaults, not ie 11, not ie_mob 11"
+      },
+      "exclude": [
+        "transform-async-to-generator",
+        "transform-regenerator"
+      ]
+    }], "@babel/preset-typescript"
+  ],
+  "plugins": [
+    "@babel/plugin-transform-typescript",
+    ["@babel/plugin-proposal-decorators",
+      {
+        "legacy": true
+      }
+    ],
+    "@babel/plugin-proposal-class-properties",
+    "@babel/plugin-transform-modules-commonjs"
+  ]
+}
