@@ -17,7 +17,7 @@ Inline web workers are web workers that are created in the same web page context
 </p>
 
 <p align="justify">
-<b>nygma-web-workers</b> is a powerful Javascript library that simplifies your interaction with web workers. The way you work with web workers is reminiscent of the use of thread objects in modern OOP languages such as C# or Java. Below is an example code that defines a task to be executed by a web worker. As you can see it is a regular function defined globally, it accepts parameter of type WorkerArgs. This structure contains an input object which can be of any cloneable object type along with helper functions for the task's communication with the external environment. The purpose of the code is to determine whether a given number is prime or not.
+<b>nygma-web-workers</b> is a lightweight Javascript library that simplifies your interaction with web workers. The way you work with web workers is reminiscent of the use of thread objects in modern OOP languages such as C# or Java. Below is an example code that defines a task to be executed by a web worker. As you can see it is a regular function defined globally, it accepts parameter of type WorkerArgs. This structure contains an input object which can be of any cloneable object type along with helper functions for the task's communication with the external environment. The purpose of the code is to determine whether a given number is prime or not.
 </p>
 
 ```typescript

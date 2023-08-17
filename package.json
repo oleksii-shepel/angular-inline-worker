@@ -54,6 +54,5 @@
     "ng-packagr": "^16.0.0",
     "typescript": "~5.0.2",
     "webpack": "^5.88.2"
-  },
-  "type": "commonjs"
+  }
 }
