@@ -17,7 +17,7 @@ Inline web workers are web workers that are created in the same web page context
 </p>
 
 <p align="justify">
-<b>nygma-web-workers</b> is a powerful Javascript library that helps you interact seamlessly with web workers. The way you work with web workers is reminiscent of the use of thread objects in modern OOP languages such as C# or Java. Below is a code example of task definition which will be executed by web worker. As you can see it is a common function defined in global scope, which takes a WorkerArgs structure as a parameter. This structure contains an input object which can be of any cloneable object type and helper functions that allow task to communicate with the outside world. This code checks if the given number is prime or not.
+<b>nygma-web-workers</b> is a powerful Javascript library that simplifies your interaction with web workers. The way you work with web workers is reminiscent of the use of thread objects in modern OOP languages such as C# or Java. Below is an example code that defines a task to be executed by a web worker. As you can see it is a regular function defined globally, it accepts parameter of type WorkerArgs. This structure contains an input object which can be of any cloneable object type along with helper functions for the task's communication with the external environment. The purpose of the code is to determine whether a given number is prime or not.
 </p>
 
 ```typescript
@@ -29,6 +29,14 @@ export interface WorkerArgs {
   next: Function;
   error: Function;
 }
+
+export interface WorkerResult {
+  status: 'success' | 'cancelled' | 'error';
+  value?: any;
+  error?: any;
+}
+
+export type WorkerTask = (args: WorkerArgs) => any | Promise<any>;
 
 export function task({data, progress, cancelled, done}: WorkerArgs) {
   progress(0);
@@ -53,7 +61,7 @@ export function task({data, progress, cancelled, done}: WorkerArgs) {
 }
 ```
 <p align="justify">
-Another example of library use is an async function call. Code below shows the possible definition of timer routine. As you may noticed, this is not the case of progress notification, instead we use next method to inform the main thread about current status of a timer. Task cancellation is an option. Async function support will be probably added in further versions, currently it deeply depends on results of transpilation by typescript compiler.
+Another example of library use is an async function call. The code below shows the possible definition of a timer routine. As you may have noticed, this is not the case of progress notification, instead we use <i>next</i> method to inform the main thread about the current status of a timer. Task cancellation is an option. Although async function support is available, it is important to tune the build process of the application to ensure that async functions outlive the transpilation.
 </p>
 
 ```typescript
@@ -78,7 +86,7 @@ export function timer({data, done, next, cancelled}: WorkerArgs) {
 ```
 
 <p align="justify">
-Next is an example of instantiation of inline worker. To start task execution we have to call run method of the worker. This method returns a promise object. Of course you can create multiple workers and run them in parallel. In this case you have to use Promise.all to wait for multiple asynchronous tasks to complete before doing something else.
+Next is an example of instantiation of inline worker. To initiate the execution of a task we have to call run method of the worker. This method returns a promise object. Of course you can create multiple workers and run them in parallel. In this case you have to use Promise.all to wait for multiple asynchronous tasks to complete before doing something else.
 </p>
 
 ```typescript

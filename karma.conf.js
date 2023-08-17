@@ -15,7 +15,8 @@ module.exports = function(config) {
 
     // list of files / patterns to load in the browser
     files: [
-      './dist/nygma-web-workers/src/**/*.js'
+      {pattern: './projects/**/*.js', type: 'module'},
+      {pattern: './projects/**/*.ts', type: 'module'}
     ],
 
 

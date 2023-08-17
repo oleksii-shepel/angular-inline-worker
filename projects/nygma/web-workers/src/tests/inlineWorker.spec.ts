@@ -3,7 +3,7 @@
 import { InlineWorker, WorkerArgs } from '../lib/inlineWorker';
 
 function cube(n: any) {
-  return n * n;
+  return n * n * n;
 }
 
 describe('Inline Worker', function () {
@@ -18,52 +18,68 @@ describe('Inline Worker', function () {
     jasmine.DEFAULT_TIMEOUT_INTERVAL = originalTimeout;
   });
 
-  it('basic inline worker', async (done) => {
-    //var worker = new InlineWorker(({data}) => cube);
-    // worker
-    //   .inject(cube)
-    //   .run(5)
-    //   .then((val) => {
-    //     expect(val).toEqual(25);
-    //     done();
-    //   });
+  it('basic inline worker', (done) => {
+    var worker = new InlineWorker(({data}) => cube(data));
+    worker
+      .inject(cube)
+      .run(5)
+      .then((value) => {
+        expect(value).toEqual(125);
+        done();
+    });
   });
 
-  it('simple inline worker with long calculation', async (done) => {
-    // function isPrime(num: number) {
-    //   for (var i = 2, len = num / 2 + 1; i < len; i++) {
-    //     if (num % i === 0) {
-    //       return false;
-    //     }
-    //   }
-    //   return true;
-    // }
+  it('simple inline worker with long calculation', (done) => {
+    function isPrime(num: number) {
+      for (var i = 2, len = num / 2 + 1; i < len; i++) {
+        if (num % i === 0) {
+          return false;
+        }
+      }
+      return true;
+    }
 
-    // var worker = new InlineWorker(({data}) => isPrime);
-    // worker
-    //   .inject(isPrime)
-    //   .run(479001599)
-    //   .then(function (result) {
-    //     expect(result).toBeTruthy();
-    //     done();
-    //   });
+    var worker = new InlineWorker(({data}) => isPrime(data));
+    worker
+      .inject(isPrime)
+      .run(479001599)
+      .then((value) => {
+        expect(value).toBeTruthy();
+        done();
+      });
   });
 
-  it('worker with injected functions', async (done) => {
-  //   function sqrt(num: number) {
-  //     return Math.sqrt(num);
-  //   }
+  it('worker with injected functions', (done) => {
+    function sqrt(num: number) {
+      return Math.sqrt(num);
+    }
 
-  //   function exec({ data }: WorkerArgs) {
-  //     return sqrt(cube(data));
-  //   }
+    function exec({ data }: WorkerArgs) {
+      return sqrt(cube(data) / data);
+    }
 
-  //   new InlineWorker(({data}) => exec)
-  //     .inject(cube, sqrt, exec)
-  //     .run(5)
-  //     .then(function (val) {
-  //       expect(val).toEqual(5);
-  //       done();
-  //     });
-   });
+    new InlineWorker((data) => exec(data))
+      .inject(cube, sqrt, exec)
+      .run(5)
+      .then((value) => {
+        expect(value).toEqual(5);
+        done();
+      });
+  });
+
+  it('executes async function within worker', (done) => {
+    async function exec() {
+      let response = await fetch('jsonplaceholder.typicode.com/todos/1');
+      let result = await response.json();
+      return result;
+    }
+
+    new InlineWorker(exec)
+      .inject()
+      .run()
+      .then((value) => {
+        done();
+      });
+  });
 });
+

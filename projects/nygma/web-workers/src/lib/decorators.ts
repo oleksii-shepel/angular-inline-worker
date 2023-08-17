@@ -39,9 +39,16 @@ export function observable(func: Function) {
 
 export function promisify(func: Function, args: object) {
   const promise = new Promise((resolve, reject) => {
-    const result = func({...args, done: resolve, error: reject});
-    if (result && result.then) {
-      result.then(resolve, reject);
+    try {
+      const result = func({...args, done: resolve, error: reject});
+      if (result && result.then) {
+        result.then(resolve, reject);
+      } else {
+        resolve(result);
+      }
+    }
+    catch(e) {
+      reject(e);
     }
   });
 

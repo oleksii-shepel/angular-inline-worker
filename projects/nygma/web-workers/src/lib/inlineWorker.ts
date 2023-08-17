@@ -14,15 +14,11 @@ export interface WorkerArgs {
 
 
 
-export type WorkerTask = (args: WorkerArgs) => any | Promise<any>;
+type WorkerResult = any;
 
 
 
-export interface WorkerResult {
-  status: 'success' | 'cancelled' | 'error';
-  value?: any;
-  error?: any;
-}
+export type WorkerTask = (args: WorkerArgs) => WorkerResult | Promise<WorkerResult>;
 
 
 
@@ -67,7 +63,7 @@ export class InlineWorker {
     }
   }
 
-  public run(data: any, transferList?: Transferable[]): Promise<any> {
+  public run(data?: any, transferList?: Transferable[]): Promise<any> {
     if(!this.promise) {
       let blob = new Blob([this.fnBody].concat(this.injected), { type: 'application/javascript' });
       this.worker = new Worker(URL.createObjectURL(blob));
@@ -75,12 +71,12 @@ export class InlineWorker {
       this.worker.postMessage(this.fnBody.includes(cancellable.name)? { data: data, cancellationBuffer: this.cancellationToken?.buffer} : { data: data }, transferList as any);
       this.promise = new Promise((resolve, reject) => {
         this.worker!.onmessage = (e: MessageEvent) => {
-          if(e.data?.type === 'done') { this.cancellationToken?.reset(); resolve({status: 'success', value: e.data.value}); this.promise = null; }
+          if(e.data?.type === 'done') { this.cancellationToken?.reset(); this.promise = null; resolve(e.data.value); }
           else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
           else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
-          else if (e.data?.type === 'cancelled') { this.cancellationToken?.reset(); resolve({status: 'cancelled'}); this.promise = null; }
+          else if (e.data?.type === 'cancelled') { this.cancellationToken?.reset(); this.promise = null; resolve(undefined); }
         }
-        this.worker!.onerror = (e: ErrorEvent) => { this.cancellationToken?.reset(); reject({status: 'error', error: e.error}); this.promise = null; };
+        this.worker!.onerror = (e: ErrorEvent) => { this.cancellationToken?.reset(); this.promise = null; reject(e.error); };
       });
     }
 
