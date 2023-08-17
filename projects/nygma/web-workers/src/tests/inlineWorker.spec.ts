@@ -75,7 +75,6 @@ describe('Inline Worker', function () {
     }
 
     new InlineWorker(exec)
-      .inject()
       .run()
       .then((value) => {
         done();
