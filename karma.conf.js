@@ -43,6 +43,10 @@ module.exports = function(config) {
     // available reporters: https://www.npmjs.com/search?q=keywords:karma-reporter
     reporters: ["kjhtml"],
 
+    client: {
+      clearContext: false, // leave Jasmine Spec Runner output visible in browser
+      captureConsole: false
+    },
     // web server port
     port: 9876,
 
