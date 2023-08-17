@@ -27,6 +27,7 @@ export interface WorkerArgs {
   cancelled: Function;
   progress: Function;
   next: Function;
+  error: Function;
 }
 
 export function task({data, progress, cancelled, done}: WorkerArgs) {
@@ -92,10 +93,6 @@ The worker itself contains additionally some auxiliary methods that can brighten
 
 <p align="justify">
 I would like to think that this library will make it easier to write concurrent code, which is still considered a gimmick for the browser.
-</p>
-
-<p align="justify">
-This project is inspired by <a href="https://github.com/adambabik/inline-worker">inline-worker</a> from Adam Babik, but be aware that there are some conceptual differences. You only have to choose the right library according to your needs.
 </p>
 
 <p align="justify">
