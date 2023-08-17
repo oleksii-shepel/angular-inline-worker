@@ -69,7 +69,7 @@ describe('Inline Worker', function () {
 
   it('executes async function within worker', (done) => {
     async function exec() {
-      let response = await fetch('jsonplaceholder.typicode.com/todos/1');
+      let response = await self.fetch('https://jsonplaceholder.typicode.com/todos/1');
       let result = await response.json();
       return result;
     }
@@ -77,6 +77,12 @@ describe('Inline Worker', function () {
     new InlineWorker(exec)
       .run()
       .then((value) => {
+        expect(value).toEqual({
+          "userId": 1,
+          "id": 1,
+          "title": "delectus aut autem",
+          "completed": false
+        });
         done();
       });
   });

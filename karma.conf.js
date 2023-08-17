@@ -10,19 +10,19 @@ module.exports = function(config) {
       "@babel/core",
       "karma-jasmine",
       "karma-chrome-launcher",
-      "karma-babel-preprocessor",
+      "karma-jasmine-html-reporter",
+      "karma-webpack",
     ],
 
     // frameworks to use
     // available frameworks: https://www.npmjs.com/search?q=keywords:karma-adapter
-    frameworks: ["jasmine"],
+    frameworks: ["jasmine", "webpack"],
 
     babelPreprocessor: {
       options: require("./babel.config.json"),
     },
     // list of files / patterns to load in the browser
     files: [
-      { pattern: "./projects/**/*.js", type: "module" },
       { pattern: "./projects/**/*.ts", type: "module" },
     ],
 
@@ -32,14 +32,16 @@ module.exports = function(config) {
     // preprocess matching files before serving them to the browser
     // available preprocessors: https://www.npmjs.com/search?q=keywords:karma-preprocessor
     preprocessors: {
-      "./projects/**/*.js": ["babel"],
-      "./projects/**/*.ts": ["babel"],
+      "./projects/**/*.js": ["webpack"],
+      "./projects/**/*.ts": ["webpack"],
     },
+
+    webpack: require("./webpack.config.js"),
 
     // test results reporter to use
     // possible values: 'dots', 'progress'
     // available reporters: https://www.npmjs.com/search?q=keywords:karma-reporter
-    reporters: ["progress"],
+    reporters: ["progress", "kjhtml"],
 
     // web server port
     port: 9876,
