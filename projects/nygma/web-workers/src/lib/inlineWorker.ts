@@ -3,8 +3,7 @@ import { cancellable, observable, subscribable, promisify } from "./decorators";
 
 
 
-export interface WorkerArgs {
-  data: any;
+export interface WorkerHelpers {
   cancelled: Function;
   next: Function;
   progress: Function;
@@ -18,7 +17,7 @@ type WorkerResult = any;
 
 
 
-export type WorkerTask = (args: WorkerArgs) => WorkerResult | Promise<WorkerResult>;
+export type WorkerTask = (data: any, helpers: WorkerHelpers | any) => WorkerResult | Promise<WorkerResult>;
 
 
 
@@ -26,8 +25,8 @@ export class InlineWorker {
   private cancellationToken: CancellationToken | null;
   private fnBody: string;
   private worker: Worker | null;
-  private onprogress: ((data: number) => void) | null;
-  private onnext: ((data: any) => void) | null;
+  private onprogress: ((data: number) => void);
+  private onnext: ((data: any) => void);
   private injected: string[];
   private promise: Promise<any> | null;
   constructor(task: WorkerTask) {
@@ -38,14 +37,14 @@ export class InlineWorker {
 
     this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
     this.fnBody = `
-      const func = (${cancellable.name}(${observable.name}(${subscribable.name}(${task.toString()}))));
       self.onmessage = function (event) {
-        const promise = ${promisify.name}(func, event.data);
         self.cancellationBuffer = event.data.cancellationBuffer ?? null;
-        promise.then(value => self.postMessage({type: "done", value: value}));
+        const func = (${cancellable.name}(${observable.name}(${subscribable.name}(${task.toString()}))));
+        const promise = ${promisify.name}(func);
+        promise(event.data.data, {}).then(value => self.postMessage({type: "done", value: value}));
       };`;
-    this.worker = this.onprogress = this.onnext = this.promise = null;
-    this.injected  = [];
+    this.worker = this.promise = null;
+    this.injected  = []; this.onprogress = this.onnext = () => {};
     this.inject(cancellable, observable, subscribable, promisify);
   }
 
@@ -54,7 +53,9 @@ export class InlineWorker {
   }
 
   public cancel(): void {
-    this.cancellationToken?.cancel();
+    if(this.worker) {
+      this.cancellationToken?.cancel();
+    }
   }
 
   public terminate(): void {
@@ -67,7 +68,6 @@ export class InlineWorker {
     if(!this.promise) {
       let blob = new Blob([this.fnBody].concat(this.injected), { type: 'application/javascript' });
       this.worker = new Worker(URL.createObjectURL(blob));
-
       this.worker.postMessage(this.fnBody.includes(cancellable.name)? { data: data, cancellationBuffer: this.cancellationToken?.buffer} : { data: data }, transferList as any);
       this.promise = new Promise((resolve, reject) => {
         this.worker!.onmessage = (e: MessageEvent) => {

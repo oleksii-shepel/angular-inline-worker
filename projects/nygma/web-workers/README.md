@@ -21,8 +21,7 @@ Inline web workers are web workers that are created in the same web page context
 </p>
 
 ```typescript
-export interface WorkerArgs {
-  data: any;
+export interface WorkerHelpers {
   done: Function;
   cancelled: Function;
   progress: Function;
@@ -30,15 +29,13 @@ export interface WorkerArgs {
   error: Function;
 }
 
-export interface WorkerResult {
-  status: 'success' | 'cancelled' | 'error';
-  value?: any;
-  error?: any;
-}
+export type WorkerResult = any;
 
-export type WorkerTask = (args: WorkerArgs) => any | Promise<any>;
 
-export function task({data, progress, cancelled, done}: WorkerArgs) {
+export type WorkerTask = (data: any, helpers: WorkerHelpers | any) => WorkerResult | Promise<WorkerResult>;
+
+
+export function task(data: number, {progress, cancelled, done}: WorkerHelpers) {
   progress(0);
   let value = 0;
   for (var i = 2, len = data / 2 + 1; i < len; i++) {
@@ -53,7 +50,6 @@ export function task({data, progress, cancelled, done}: WorkerArgs) {
     if (data % i === 0) {
       progress(1);
       done(false);
-      return;
     }
   }
   progress(1);
@@ -65,7 +61,7 @@ Another example of library use is an async function call. The code below shows t
 </p>
 
 ```typescript
-export function timer({data, done, next, cancelled}: WorkerArgs) {
+export function timer(data: number, {done, next, cancelled}: WorkerHelpers) {
   next('timer set to ' + data + 'ms');
 
   let interval = setInterval(() => {
@@ -80,6 +76,7 @@ export function timer({data, done, next, cancelled}: WorkerArgs) {
     if(cancelled()) {
       clearInterval(interval);
       next('timer cancelled');
+      return;
     }
   }, 1000);
 }

@@ -3,6 +3,16 @@
 
 module.exports = function(config) {
   config.set({
+    customHeaders: [{
+        match: /\.*$/,
+        name: 'Cross-Origin-Embedder-Policy',
+        value: 'require-corp'
+      }, {
+        match: /\.*$/,
+        name: 'Cross-Origin-Opener-Policy',
+        value: 'same-origin'
+      }
+    ],
     // base path that will be used to resolve all patterns (eg. files, exclude)
     basePath: "",
 

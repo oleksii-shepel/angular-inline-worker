@@ -6,7 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "babel ./projects/nygma/web-workers --out-dir ./dist/nygma/web-workers --extensions \".ts, .js\" && karma start --grep ./dist/nygma/web-workers"
+    "test": "babel ./projects/nygma/web-workers --out-dir ./tests/nygma/web-workers --extensions \".ts, .js\" && karma start --grep ./tests/nygma/web-workers"
   },
   "private": true,
   "dependencies": {

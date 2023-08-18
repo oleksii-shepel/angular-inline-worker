@@ -1,9 +1,50 @@
 /* global InlineWorker */
 
-import { InlineWorker, WorkerArgs } from '../lib/inlineWorker';
+import { InlineWorker, WorkerHelpers } from '../lib/inlineWorker';
 
-function cube(n: any) {
+export function cube(n: any) {
   return n * n * n;
+}
+
+export function task(data: number, {progress, cancelled, done}: any) {
+  progress(0);
+  let value = 0;
+  for (var i = 2, len = data / 2 + 1; i < len; i++) {
+    if(i / len - value > 0.01) {
+      value = i / len;
+      progress(value);
+
+      if(cancelled()) {
+        return;
+      }
+    }
+    if (data % i === 0) {
+      progress(1);
+      done(false);
+    }
+  }
+  progress(1);
+  done(true);
+}
+
+export function timer(data: number, {done, next, cancelled}: WorkerHelpers) {
+  next('timer set to ' + data + 'ms');
+
+  let interval = setInterval(() => {
+    data -= 1000;
+    next('elapsed ' + data + 'ms');
+
+    if(data <= 0) {
+      clearInterval(interval);
+      next('timer completed');
+      done();
+    }
+    if(cancelled()) {
+      clearInterval(interval);
+      next('timer cancelled');
+      done();
+    }
+  }, 1000);
 }
 
 describe('Inline Worker', function () {
@@ -11,7 +52,7 @@ describe('Inline Worker', function () {
 
   beforeEach(function () {
     originalTimeout = jasmine.DEFAULT_TIMEOUT_INTERVAL;
-    jasmine.DEFAULT_TIMEOUT_INTERVAL = 100000;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
   });
 
   afterEach(function () {
@@ -19,7 +60,7 @@ describe('Inline Worker', function () {
   });
 
   it('basic inline worker', (done) => {
-    var worker = new InlineWorker(({data}) => cube(data));
+    var worker = new InlineWorker((data) => cube(data));
     worker
       .inject(cube)
       .run(5)
@@ -30,18 +71,9 @@ describe('Inline Worker', function () {
   });
 
   it('simple inline worker with long calculation', (done) => {
-    function isPrime(num: number) {
-      for (var i = 2, len = num / 2 + 1; i < len; i++) {
-        if (num % i === 0) {
-          return false;
-        }
-      }
-      return true;
-    }
 
-    var worker = new InlineWorker(({data}) => isPrime(data));
+    var worker = new InlineWorker(task);
     worker
-      .inject(isPrime)
       .run(479001599)
       .then((value) => {
         expect(value).toBeTruthy();
@@ -54,7 +86,7 @@ describe('Inline Worker', function () {
       return Math.sqrt(num);
     }
 
-    function exec({ data }: WorkerArgs) {
+    function exec(data: number) {
       return sqrt(cube(data) / data);
     }
 
@@ -67,9 +99,9 @@ describe('Inline Worker', function () {
       });
   });
 
-  it('executes async function within worker', (done) => {
+  it('async function within worker', (done) => {
     async function exec() {
-      let response = await self.fetch('https://jsonplaceholder.typicode.com/todos/1');
+      let response = await fetch('https://jsonplaceholder.typicode.com/todos/1');
       let result = await response.json();
       return result;
     }
@@ -85,6 +117,34 @@ describe('Inline Worker', function () {
         });
         done();
       });
+  });
+
+  it('task cancellation', (done) => {
+
+    const worker = new InlineWorker(task);
+    worker.progress(value => expect(value).toBeLessThan(1)).run(479001599);
+
+    const timeout = setTimeout(() => {
+      worker.cancel();
+      clearTimeout(timeout);
+    }, 100);
+
+    const interval = setInterval(() => {
+      if(!worker.running()) {
+        clearInterval(interval);
+        done();
+      }
+    }, 100);
+  });
+
+
+  it('main thread notification', (done) => {
+    const worker = new InlineWorker(timer);
+    let count = 0;
+    worker.subscribe(value => { if (typeof value === 'string') { count++; }}).run(3000).then((value) => {
+      expect(count).toBeGreaterThanOrEqual(3);
+      done();
+    })
   });
 });
 

@@ -11,8 +11,7 @@ export function cancellable(func: Function) {
     }
     return item === 1;
   }
-
-  return (args: any) => func({...args, cancelled});
+  return (data: any, helpers: any) => func(data, {...helpers, cancelled});
 }
 
 
@@ -21,8 +20,7 @@ export function subscribable(func: Function) {
   function next(value: any) {
     self.postMessage({type: 'next', value});
   }
-
-  return (args: any) => func({...args, next});
+  return (data: any, helpers: any) => func(data, {...helpers, next});
 }
 
 
@@ -31,26 +29,27 @@ export function observable(func: Function) {
   function progress(value: number) {
     self.postMessage({type: 'progress', value});
   }
-
-  return (args: any) => func({...args, progress});
+  return (data: any, helpers: any) => func(data, {...helpers, progress});
 }
 
 
 
-export function promisify(func: Function, args: object) {
-  const promise = new Promise((resolve, reject) => {
+export function promisify(func: Function) {
+  return (data: any, helpers: any) => new Promise((resolve, reject) => {
     try {
-      const result = func({...args, done: resolve, error: reject});
-      if (result && result.then) {
-        result.then(resolve, reject);
-      } else {
+      let resolved = false, rejected = false;
+      const done = (args: any) => { resolved = true; resolve(args); };
+      const error = (args: any) => { rejected = true; reject(args); };
+      const result = func(data, {...helpers, done, error});
+      if (result instanceof Promise) {
+        return result.then(resolve, reject);
+      } else if(!resolved && !rejected && result !== undefined) {
         resolve(result);
+        return result;
       }
     }
     catch(e) {
       reject(e);
     }
   });
-
-  return promise;
 }
