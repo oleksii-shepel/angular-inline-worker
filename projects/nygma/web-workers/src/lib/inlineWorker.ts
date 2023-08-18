@@ -41,7 +41,9 @@ export class InlineWorker {
         self.cancellationBuffer = event.data.cancellationBuffer ?? null;
         const func = (${cancellable.name}(${observable.name}(${subscribable.name}(${task.toString()}))));
         const promise = ${promisify.name}(func);
-        promise(event.data.data, {}).then(value => self.postMessage({type: "done", value: value}));
+        promise(event.data.data, {})
+          .then(value => self.postMessage({type: "done", value: value}))
+          .catch(error => self.postMessage({type: "error", error: error}));
       };`;
     this.worker = this.promise = null;
     this.injected  = []; this.onprogress = this.onnext = () => {};
@@ -71,12 +73,12 @@ export class InlineWorker {
       this.worker.postMessage(this.fnBody.includes(cancellable.name)? { data: data, cancellationBuffer: this.cancellationToken?.buffer} : { data: data }, transferList as any);
       this.promise = new Promise((resolve, reject) => {
         this.worker!.onmessage = (e: MessageEvent) => {
-          if(e.data?.type === 'done') { this.cancellationToken?.reset(); this.promise = null; resolve(e.data.value); }
+          if (e.data?.type === 'done') { this.cancellationToken?.reset(); this.promise = null; resolve(e.data.value); }
           else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
           else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
           else if (e.data?.type === 'cancelled') { this.cancellationToken?.reset(); this.promise = null; resolve(undefined); }
+          else if (e.data?.type === 'error') { this.cancellationToken?.reset(); this.promise = null; reject(e.data.error); }
         }
-        this.worker!.onerror = (e: ErrorEvent) => { this.cancellationToken?.reset(); this.promise = null; reject(e.error); };
       });
     }
 

@@ -36,20 +36,16 @@ export function observable(func: Function) {
 
 export function promisify(func: Function) {
   return (data: any, helpers: any) => new Promise((resolve, reject) => {
-    try {
-      let resolved = false, rejected = false;
-      const done = (args: any) => { resolved = true; resolve(args); };
-      const error = (args: any) => { rejected = true; reject(args); };
-      const result = func(data, {...helpers, done, error});
-      if (result instanceof Promise) {
-        return result.then(resolve, reject);
-      } else if(!resolved && !rejected && result !== undefined) {
-        resolve(result);
-        return result;
-      }
-    }
-    catch(e) {
-      reject(e);
+    throw new Error("asdasdasdasd");
+    let resolved = false, rejected = false;
+    const done = (args: any) => { resolved = true; resolve(args); };
+    const error = (args: any) => { rejected = true; reject(args); };
+    const result = func(data, {...helpers, done, error});
+    if (result instanceof Promise) {
+      return result.then(resolve, reject);
+    } else if(!resolved && !rejected && result !== undefined) {
+      resolve(result);
+      return result;
     }
   });
 }

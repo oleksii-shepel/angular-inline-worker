@@ -67,7 +67,7 @@ describe('Inline Worker', function () {
       .then((value) => {
         expect(value).toEqual(125);
         done();
-    });
+      }).catch(done.fail);
   });
 
   it('simple inline worker with long calculation', (done) => {
@@ -78,7 +78,7 @@ describe('Inline Worker', function () {
       .then((value) => {
         expect(value).toBeTruthy();
         done();
-      });
+      }).catch(done.fail);
   });
 
   it('worker with injected functions', (done) => {
@@ -96,7 +96,7 @@ describe('Inline Worker', function () {
       .then((value) => {
         expect(value).toEqual(5);
         done();
-      });
+      }).catch(done.fail);
   });
 
   it('async function within worker', (done) => {
@@ -116,7 +116,7 @@ describe('Inline Worker', function () {
           "completed": false
         });
         done();
-      });
+      }).catch(done.fail);
   });
 
   it('task cancellation', (done) => {
@@ -144,7 +144,8 @@ describe('Inline Worker', function () {
     worker.subscribe(value => { if (typeof value === 'string') { count++; }}).run(3000).then((value) => {
       expect(count).toBeGreaterThanOrEqual(3);
       done();
-    })
+    }).catch(done.fail);
   });
+  ;
 });
 
