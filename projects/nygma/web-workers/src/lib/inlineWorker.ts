@@ -13,7 +13,7 @@ export interface WorkerHelpers {
 
 
 
-type WorkerResult = any;
+export type WorkerResult = any;
 
 
 
