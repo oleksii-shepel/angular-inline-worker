@@ -34,17 +34,21 @@ export class InlineWorker {
     if (!isWorkerSupported()) {
       throw new Error('Web Worker is not supported');
     }
-
     this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
+
+    // function body cleaned from WEBPACK_IMPORTS
+    let taskBody = task.toString().replace(/(\(\d+\s*,\s*[^.]+\.)(\w+)(\)\()(.*)(\))/g, "$2($4)");
+
     this.fnBody = `
       self.onmessage = function (event) {
         self.cancellationBuffer = event.data.cancellationBuffer ?? null;
-        const func = (${cancellable.name}(${observable.name}(${subscribable.name}(${task.toString()}))));
+        const func = (${cancellable.name}(${observable.name}(${subscribable.name}(${taskBody}))));
         const promise = ${promisify.name}(func);
         promise(event.data.data, {})
           .then(value => self.postMessage({type: "done", value: value}))
           .catch(error => self.postMessage({type: "error", error: error}));
       };`;
+
     this.worker = this.promise = null;
     this.injected  = []; this.onprogress = this.onnext = () => {};
     this.inject(cancellable, observable, subscribable, promisify);
@@ -103,6 +107,7 @@ export class InlineWorker {
     this.injected = this.injected ?? []
     for (let i = 0; i < args.length; i++) {
       let fn: Function = args[i];
+      eval('fn = ' + fn.toString());
       if (typeof fn === 'function') {
         let fnBody = fn.toString();
         //check if function is anonymous and name it
