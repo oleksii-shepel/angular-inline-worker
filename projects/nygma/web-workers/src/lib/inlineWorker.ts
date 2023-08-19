@@ -1,5 +1,38 @@
-import { CancellationToken } from "./cancellationToken";
-import { cancellable, observable, subscribable, promisify } from "./decorators";
+
+
+export class CancellationToken {
+  private shared: ArrayBuffer;
+  private array: Int32Array;
+
+  constructor() {
+    if(!crossOriginIsolated) {
+      console.warn("CancellationToken is not supported in this environment. Please add following two headers to the top level document: 'Cross-Origin-Embedder-Policy': 'require-corp'; 'Cross-Origin-Opener-Policy': 'same-origin';");
+    }
+
+    this.shared = crossOriginIsolated? new SharedArrayBuffer(4): new ArrayBuffer(4);
+    this.array = new Int32Array(this.shared);
+  }
+
+  public cancel(): void {
+    if (this.array) {
+      Atomics.store(this.array, 0, 1);
+    }
+  }
+
+  public reset(): void {
+    if (this.array) {
+      Atomics.store(this.array, 0, 0);
+    }
+  }
+
+  public get cancelled(): boolean {
+    return !!this.array && this.array[0] === 1;
+  }
+
+  public get buffer(): ArrayBuffer {
+    return this.shared;
+  }
+}
 
 
 
@@ -14,6 +47,7 @@ export interface WorkerHelpers {
 
 
 type WorkerResult = any;
+
 
 
 
@@ -38,20 +72,10 @@ export class InlineWorker {
 
     // function body cleaned from WEBPACK_IMPORTS
     let taskBody = task.toString().replace(/(\(\d+\s*,\s*[^.]+\.)(\w+)(\)\()(.*)(\))/g, "$2($4)");
-
-    this.fnBody = `
-      self.onmessage = function (event) {
-        self.cancellationBuffer = event.data.cancellationBuffer ?? null;
-        const func = (${cancellable.name}(${observable.name}(${subscribable.name}(${taskBody}))));
-        const promise = ${promisify.name}(func);
-        promise(event.data.data, {})
-          .then(value => self.postMessage({type: "done", value: value}))
-          .catch(error => self.postMessage({type: "error", error: error}));
-      };`;
+    this.fnBody = `function cancelled(){let e=self.cancellationBuffer[0];return 1===e&&self.postMessage({type:"cancelled",value:"Worker was cancelled from main thread."}),1===e}function progress(e){self.postMessage({type:"progress",value:e})}function next(e){self.postMessage({type:"next",value:e})}function promisify(e){return(n,t)=>new Promise((a,o)=>{let s=!1,r=!1,c=e=>{s=!0,a(e)},l=e=>{r=!0,o(e)},i=e(n,{...t,done:c,error:l});return i instanceof Promise?i.then(a,o):s||r||void 0===i?void 0:(a(i),i)})}self.onmessage=function(event){self.cancellationBuffer=new Int32Array(event.data.cancellationBuffer??new ArrayBuffer(4));let func=(${taskBody}),promise=promisify(func);promise(event.data.data,{cancelled,next,progress}).then(e=>self.postMessage({type:"done",value:e})).catch(e=>self.postMessage({type:"error",error:e}))};`
 
     this.worker = this.promise = null;
     this.injected  = []; this.onprogress = this.onnext = () => {};
-    this.inject(cancellable, observable, subscribable, promisify);
   }
 
   public static terminate(workers: InlineWorker[]): void {
@@ -74,7 +98,7 @@ export class InlineWorker {
     if(!this.promise) {
       let blob = new Blob([this.fnBody].concat(this.injected), { type: 'application/javascript' });
       this.worker = new Worker(URL.createObjectURL(blob));
-      this.worker.postMessage(this.fnBody.includes(cancellable.name)? { data: data, cancellationBuffer: this.cancellationToken?.buffer} : { data: data }, transferList as any);
+      this.worker.postMessage({ data: data, cancellationBuffer: this.cancellationToken?.buffer}, transferList as any);
       this.promise = new Promise((resolve, reject) => {
         this.worker!.onmessage = (e: MessageEvent) => {
           if (e.data?.type === 'done') { this.cancellationToken?.reset(); this.promise = null; resolve(e.data.value); }
@@ -107,7 +131,6 @@ export class InlineWorker {
     this.injected = this.injected ?? []
     for (let i = 0; i < args.length; i++) {
       let fn: Function = args[i];
-      eval('fn = ' + fn.toString());
       if (typeof fn === 'function') {
         let fnBody = fn.toString();
         //check if function is anonymous and name it
