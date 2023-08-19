@@ -7,6 +7,7 @@ module.exports = {
   resolve: {
     extensions: ['.js', '.ts']
   },
+  mode: 'production',
   module: {
     rules: [
       {
