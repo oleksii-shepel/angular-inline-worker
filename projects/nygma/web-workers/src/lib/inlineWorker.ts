@@ -1,5 +1,5 @@
 import { CancellationToken } from "./cancellationToken";
-import { cancellable, observable, subscribable, promisify } from "./decorators";
+import { cancellable, observable, subscribable, promisify, cancelled } from "./decorators";
 
 
 
@@ -40,18 +40,20 @@ export class InlineWorker {
     let taskBody = task.toString().replace(/(\(\d+\s*,\s*[^.]+\.)(\w+)(\)\()(.*)(\))/g, "$2($4)");
 
     this.fnBody = `
+
       self.onmessage = function (event) {
-        self.cancellationBuffer = event.data.cancellationBuffer ?? null;
+        self.cancellationBuffer = event.data.cancellationBuffer ?? new ArrayBuffer(4);
         const func = (${cancellable.name}(${observable.name}(${subscribable.name}(${taskBody}))));
         const promise = ${promisify.name}(func);
         promise(event.data.data, {})
-          .then(value => self.postMessage({type: "done", value: value}))
+          .then(value => { if(!${cancelled.name}()) { self.postMessage({type: "done", value: value}); }})
           .catch(error => self.postMessage({type: "error", error: error}));
       };`;
 
     this.worker = this.promise = null;
     this.injected  = []; this.onprogress = this.onnext = () => {};
-    this.inject(cancellable, observable, subscribable, promisify);
+    this.inject(cancelled);
+    this.inject(cancelled, cancellable, observable, subscribable, promisify);
   }
 
   public static terminate(workers: InlineWorker[]): void {
@@ -74,7 +76,7 @@ export class InlineWorker {
     if(!this.promise) {
       let blob = new Blob([this.fnBody].concat(this.injected), { type: 'application/javascript' });
       this.worker = new Worker(URL.createObjectURL(blob));
-      this.worker.postMessage(this.fnBody.includes(cancellable.name)? { data: data, cancellationBuffer: this.cancellationToken?.buffer} : { data: data }, transferList as any);
+      this.worker.postMessage({ data: data, cancellationBuffer: this.cancellationToken?.buffer}, transferList as any);
       this.promise = new Promise((resolve, reject) => {
         this.worker!.onmessage = (e: MessageEvent) => {
           if (e.data?.type === 'done') { this.cancellationToken?.reset(); this.promise = null; resolve(e.data.value); }

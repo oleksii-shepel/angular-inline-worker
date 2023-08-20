@@ -13,19 +13,6 @@
 </p>
 
 ```typescript
-export interface WorkerHelpers {
-  done: Function;
-  cancelled: Function;
-  progress: Function;
-  next: Function;
-  error: Function;
-}
-
-export type WorkerResult = any;
-
-
-export type WorkerTask = (data: any, helpers: WorkerHelpers | any) => WorkerResult | Promise<WorkerResult>;
-
 
 export function task(data: number, {progress, cancelled, done}: WorkerHelpers) {
   progress(0);
@@ -36,7 +23,7 @@ export function task(data: number, {progress, cancelled, done}: WorkerHelpers) {
       progress(value);
 
       if(cancelled()) {
-        return;
+        done();
       }
     }
     if (data % i === 0) {
@@ -72,7 +59,7 @@ export function timer(data: number, {done, next, cancelled}: WorkerHelpers) {
     if(cancelled()) {
       clearInterval(interval);
       next('timer cancelled');
-      return;
+      done();
     }
   }, 1000);
 }
