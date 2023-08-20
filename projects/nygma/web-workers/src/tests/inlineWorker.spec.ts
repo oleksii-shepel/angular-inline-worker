@@ -15,7 +15,7 @@ export function task(data: number, {progress, cancelled, done}: any) {
       progress(value);
 
       if(cancelled()) {
-        done();
+        return;
       }
     }
     if (data % i === 0) {
@@ -42,7 +42,6 @@ export function timer(data: number, {done, next, cancelled}: WorkerHelpers) {
     if(cancelled()) {
       clearInterval(interval);
       next('timer cancelled');
-      done();
     }
   }, 1000);
 }
@@ -122,7 +121,7 @@ describe('Inline Worker', function () {
   it('task cancellation', (done) => {
 
     const worker = new InlineWorker(task);
-    worker.progress(value => expect(value).toBeLessThan(1)).run(479001599);
+    worker.progress(value => expect(value).toBeLessThan(1)).run(4790016029);
 
     const timeout = setTimeout(() => {
       worker.cancel();
