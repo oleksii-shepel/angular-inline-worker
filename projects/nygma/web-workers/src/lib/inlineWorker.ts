@@ -96,16 +96,17 @@ export class InlineWorker {
 
   public run(data?: any, transferList?: Transferable[]): Promise<any> {
     if(!this.promise) {
+      this.cancellationToken?.reset();
       let blob = new Blob([this.fnBody].concat(this.injected), { type: 'application/javascript' });
       this.worker = new Worker(URL.createObjectURL(blob));
       this.worker.postMessage({ data: data, cancellationBuffer: this.cancellationToken?.buffer}, transferList as any);
       this.promise = new Promise((resolve, reject) => {
         this.worker!.onmessage = (e: MessageEvent) => {
-          if (e.data?.type === 'done') { this.cancellationToken?.reset(); this.promise = null; resolve(e.data.value); }
+          if (e.data?.type === 'done') { this.promise = null; resolve(e.data.value); }
           else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
           else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
-          else if (e.data?.type === 'cancelled') { this.cancellationToken?.reset(); this.promise = null; resolve(undefined); }
-          else if (e.data?.type === 'error') { this.cancellationToken?.reset(); this.promise = null; reject(e.data.error); }
+          else if (e.data?.type === 'cancelled') { this.promise = null; resolve(undefined); }
+          else if (e.data?.type === 'error') { this.promise = null; reject(e.data.error); }
         }
       });
     }
