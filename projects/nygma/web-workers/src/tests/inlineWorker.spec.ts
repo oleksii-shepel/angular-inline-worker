@@ -121,7 +121,7 @@ describe('Inline Worker', function () {
   it('task cancellation', (done) => {
 
     const worker = new InlineWorker(task);
-    worker.progress(value => expect(value).toBeLessThan(1)).run(479001599);
+    worker.progress(value => expect(value).toBeLessThan(1)).run(4790016029);
 
     const timeout = setTimeout(() => {
       worker.cancel();
