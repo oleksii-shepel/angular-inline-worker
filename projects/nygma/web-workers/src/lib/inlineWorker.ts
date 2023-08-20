@@ -116,8 +116,8 @@ export class InlineWorker {
       let fn: Function = args[i];
       if (typeof fn === 'function') {
         let fnBody = fn.toString();
-        //check if function is anonymous and name it
-        fnBody = fnBody.replace(/function[\s]*\(/, `\n\nfunction ${fn.name}(`);
+        // check if function is anonymous and name it
+        fnBody = fnBody.replace(/function[\s]*\(/, `function ${fn.name}(`);
 
         if(this.injected.indexOf(fnBody) === -1) {
           this.injected.push(fnBody);
