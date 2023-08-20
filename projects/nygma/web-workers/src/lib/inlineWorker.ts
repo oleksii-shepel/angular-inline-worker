@@ -42,11 +42,12 @@ export class InlineWorker {
     this.fnBody = `
 
       self.onmessage = function (event) {
-        self.cancellationBuffer = event.data.cancellationBuffer ?? new ArrayBuffer(4);
+        self.cancellationBuffer = new Int32Array(event.data.cancellationBuffer ?? new ArrayBuffer(4));
         const func = (${cancellable.name}(${observable.name}(${subscribable.name}(${taskBody}))));
         const promise = ${promisify.name}(func);
         promise(event.data.data, {})
-          .then(value => { if(!${cancelled.name}()) { self.postMessage({type: "done", value: value}); }})
+          .then(value => { if(!${cancelled.name}()) { self.postMessage({type: "done", value: value}); }
+                           else { self.postMessage({type: "cancelled", value: undefined}); }})
           .catch(error => self.postMessage({type: "error", error: error}));
       };`;
 
@@ -74,16 +75,17 @@ export class InlineWorker {
 
   public run(data?: any, transferList?: Transferable[]): Promise<any> {
     if(!this.promise) {
+      this.cancellationToken?.reset();
       let blob = new Blob([this.fnBody].concat(this.injected), { type: 'application/javascript' });
       this.worker = new Worker(URL.createObjectURL(blob));
       this.worker.postMessage({ data: data, cancellationBuffer: this.cancellationToken?.buffer}, transferList as any);
       this.promise = new Promise((resolve, reject) => {
         this.worker!.onmessage = (e: MessageEvent) => {
-          if (e.data?.type === 'done') { this.cancellationToken?.reset(); this.promise = null; resolve(e.data.value); }
+          if (e.data?.type === 'done') { this.promise = null; resolve(e.data.value); }
           else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
           else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
-          else if (e.data?.type === 'cancelled') { this.cancellationToken?.reset(); this.promise = null; resolve(undefined); }
-          else if (e.data?.type === 'error') { this.cancellationToken?.reset(); this.promise = null; reject(e.data.error); }
+          else if (e.data?.type === 'cancelled') { this.promise = null; resolve(undefined); }
+          else if (e.data?.type === 'error') { this.promise = null; reject(e.data.error); }
         }
       });
     }

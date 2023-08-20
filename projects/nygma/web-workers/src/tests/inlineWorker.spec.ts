@@ -15,7 +15,7 @@ export function task(data: number, {progress, cancelled, done}: any) {
       progress(value);
 
       if(cancelled()) {
-        done();
+        return;
       }
     }
     if (data % i === 0) {
@@ -42,7 +42,6 @@ export function timer(data: number, {done, next, cancelled}: WorkerHelpers) {
     if(cancelled()) {
       clearInterval(interval);
       next('timer cancelled');
-      done();
     }
   }, 1000);
 }

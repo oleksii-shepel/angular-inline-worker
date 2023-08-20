@@ -1,10 +1,6 @@
 
 export function cancelled() {
-  let item = new Int32Array((self as any).cancellationBuffer)[0];
-  if(item === 1) {
-    self.postMessage({type: 'cancelled', value: undefined});
-  }
-  return item === 1;
+  return Atomics.load((self as any).cancellationBuffer as Int32Array, 0) === 1;
 }
 
 
@@ -42,8 +38,9 @@ export function promisify(func: Function) {
     if (result instanceof Promise) {
       return result.then(resolve, reject);
     } else if(!resolved && !rejected && result !== undefined) {
-      resolve(result);
-      return result;
+      resolve(result); return result;
+    } else if(cancelled()) {
+      resolve(undefined); return;
     }
   });
 }
