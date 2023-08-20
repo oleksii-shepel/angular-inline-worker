@@ -15,7 +15,7 @@ export function task(data: number, {progress, cancelled, done}: any) {
       progress(value);
 
       if(cancelled()) {
-        return;
+        done();
       }
     }
     if (data % i === 0) {
@@ -32,11 +32,11 @@ export function timer(data: number, {done, next, cancelled}: WorkerHelpers) {
 
   let interval = setInterval(() => {
     data -= 1000;
-    next('elapsed ' + data + 'ms');
+    next(data + 'ms left');
 
     if(data <= 0) {
       clearInterval(interval);
-      next('timer completed');
+      next('time is up');
       done();
     }
     if(cancelled()) {
