@@ -7,7 +7,7 @@ export interface WorkerHelpers {
 }
 
 export type WorkerResult = any;
-export type WorkerTask = (data: any, helpers: WorkerHelpers | any) => WorkerResult | Promise<WorkerResult>;
+export type WorkerMethod = (data: any, helpers: WorkerHelpers | any) => WorkerResult | Promise<WorkerResult>;
 
 export abstract class WebWorker {
   protected worker: Worker | null = null;

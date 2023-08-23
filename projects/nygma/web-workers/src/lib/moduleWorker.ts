@@ -1,5 +1,6 @@
-import { CancellationToken, isWebpackBundlerPresent, isWorkerSupported } from "nygma-web-workers";
-import { WebWorker } from "./abstractWorker";
+import { CancellationToken } from "./cancellationToken";
+import { WebWorker, isWebpackBundlerPresent, isWorkerSupported } from "./abstractWorker";
+
 
 export class ModuleWorker extends WebWorker {
   private cancellationToken: CancellationToken | null;
@@ -11,7 +12,6 @@ export class ModuleWorker extends WebWorker {
   private chunk: string;
   private funcname: string | undefined;
   private static chunksLoaded: Map<string, string> = new Map();
-
   constructor(chunk: string, funcname?: string) {
     super();
 
@@ -19,8 +19,8 @@ export class ModuleWorker extends WebWorker {
       throw new Error('Web Worker is not supported');
     }
 
-    if(!isWebpackBundlerPresent()) {
-      throw new Error('Web Worker supports only webpack modules');
+    if(isWebpackBundlerPresent()) {
+      throw new Error('Module worker supports only webpack bundles');
     }
 
     this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
@@ -115,10 +115,6 @@ export class ModuleWorker extends WebWorker {
                 __worker_result__ = __webpack_export_functions__[__webpack_function_names__['default']](__worker_data__, __worker_helpers__);
               } else if (__webpack_function_names__.length === 1) {
                 __worker_result__ = __webpack_export_functions__[__webpack_function_names__[0]](__worker_data__, __worker_helpers__);
-              } else if (__webpack_function_names__.length === 0) {
-                throw new Error('There are no exports in the module');
-              } else {
-                throw new Error('There are multiple choices that can be called');
               }
 
               if (__worker_result__ instanceof Promise) {
