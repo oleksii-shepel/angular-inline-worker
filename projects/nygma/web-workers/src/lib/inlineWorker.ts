@@ -1,34 +1,16 @@
+import { WorkerTask as WorkerMethod, isWebpackBundlerPresent, isWorkerSupported } from "nygma-web-workers";
+import { WebWorker } from "./abstractWorker";
 import { CancellationToken } from "./cancellationToken";
 
-
-
-export interface WorkerHelpers {
-  cancelled: Function;
-  next: Function;
-  progress: Function;
-  done: Function;
-  error: Function;
-}
-
-
-
-export type WorkerResult = any;
-
-
-
-export type WorkerTask = (data: any, helpers: WorkerHelpers | any) => WorkerResult | Promise<WorkerResult>;
-
-
-
-export class InlineWorker {
+export class InlineWorker extends WebWorker {
   private cancellationToken: CancellationToken | null;
   private workerbody: string;
-  private worker: Worker | null;
   private onprogress: ((data: number) => void);
   private onnext: ((data: any) => void);
   private injected: string[];
   private promise: Promise<any> | null;
-  constructor(func: WorkerTask) {
+  constructor(func: WorkerMethod) {
+    super();
 
     if (!isWorkerSupported()) {
       throw new Error('Web Worker is not supported');
@@ -76,27 +58,23 @@ export class InlineWorker {
           .catch(error => self.postMessage({type: "error", error: error}));
       };`;
 
-    this.worker = this.promise = null;
+    this.promise = null;
     this.injected  = []; this.onprogress = this.onnext = () => {};
   }
 
-  public static terminate(workers: InlineWorker[]): void {
-    workers.forEach(worker => worker.worker?.terminate());
-  }
-
-  public cancel(): void {
-    if(this.worker) {
-      this.cancellationToken?.cancel();
-    }
-  }
-
-  public terminate(): void {
+  terminate(): void {
     if(this.worker) {
       this.worker.terminate();
     }
   }
 
-  public run(data?: any, transferList?: Transferable[]): Promise<any> {
+  cancel(): void {
+    if(this.worker) {
+      this.cancellationToken?.cancel();
+    }
+  }
+
+  run(data?: any, transferList?: Transferable[]): Promise<any> {
     if(!this.promise) {
       this.cancellationToken?.reset();
       let blob = new Blob([this.workerbody].concat(this.injected), { type: 'application/javascript' });
@@ -116,21 +94,21 @@ export class InlineWorker {
     return this.promise;
   }
 
-  running() {
+  running(): boolean {
     return !!this.promise;
   }
 
-  progress(fn: (data: any) => void): InlineWorker {
+  progress(fn: (data: any) => void): WebWorker {
     this.onprogress = fn;
     return this;
   }
 
-  subscribe(fn: (data: any) => void): InlineWorker {
+  subscribe(fn: (data: any) => void): WebWorker {
     this.onnext = fn;
     return this;
   }
 
-  public inject(...args: Function[]): InlineWorker {
+  inject(...args: Function[]): WebWorker {
     this.injected = this.injected ?? []
     for (let i = 0; i < args.length; i++) {
       let fn: Function = args[i];
@@ -146,16 +124,4 @@ export class InlineWorker {
     }
     return this;
   }
-}
-
-
-
-export function isWorkerSupported(): boolean {
-  return !!Worker;
-}
-
-
-
-export function isWebpackBundlerPresent(): boolean {
-  return !!(window as any)["webpackChunkapp2"]
 }
