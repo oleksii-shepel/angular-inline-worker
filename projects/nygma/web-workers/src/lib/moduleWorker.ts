@@ -115,6 +115,10 @@ export class ModuleWorker extends WebWorker {
                 __worker_result__ = __webpack_export_functions__[__webpack_function_names__['default']](__worker_data__, __worker_helpers__);
               } else if (__webpack_function_names__.length === 1) {
                 __worker_result__ = __webpack_export_functions__[__webpack_function_names__[0]](__worker_data__, __worker_helpers__);
+              } else if (__webpack_function_names__.length === 0) {
+                throw new Error('There are no exports in the module');
+              } else {
+                throw new Error('There are multiple choices that can be called');
               }
 
               if (__worker_result__ instanceof Promise) {
