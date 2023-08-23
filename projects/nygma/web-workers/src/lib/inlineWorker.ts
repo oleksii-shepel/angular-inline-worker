@@ -58,12 +58,11 @@ export class InlineWorker {
 
     self.onmessage = function (event) {
       __worker_cancellationBuffer__ = new Int32Array(event.data.cancellationBuffer ?? new ArrayBuffer(4));
-      const promise = new Promise((__worker_resolve__, __worker_reject__) => {
+      const __worker_promise__ = new Promise((__worker_resolve__, __worker_reject__) => {
         let __worker_resolved__ = false, __worker_rejected__ = false;
         const __worker_done__ = (args) => { __worker_resolved__ = true; __worker_resolve__(args); };
         const __worker_error__ = (args) => { __worker_rejected__ = true; __worker_reject__(args); };
         __worker_data__ = event.data.data; __worker_helpers__ = {cancelled: __worker_cancelled__, next: __worker_next__, progress: __worker_progress__, done: __worker_done__, error: __worker_error__};
-        console.log(__worker_data__,__worker_helpers__);
         const __worker_result__ = (${taskBody})(__worker_data__, __worker_helpers__);
         if (__worker_result__ instanceof Promise) {
           return __worker_result__.then(__worker_resolve__, __worker_reject__);
