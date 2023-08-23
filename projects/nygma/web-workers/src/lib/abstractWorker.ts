@@ -10,7 +10,7 @@ export type WorkerResult = any;
 export type WorkerTask = (data: any, helpers: WorkerHelpers | any) => WorkerResult | Promise<WorkerResult>;
 
 export abstract class WebWorker {
-  protected worker: Worker| null = null;
+  protected worker: Worker | null = null;
 
   static terminate(workers: WebWorker[]): void {
     workers.forEach(worker => worker.worker?.terminate());
