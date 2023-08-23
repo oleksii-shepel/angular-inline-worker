@@ -1,6 +1,6 @@
-import { WorkerTask as WorkerMethod, isWebpackBundlerPresent, isWorkerSupported } from "nygma-web-workers";
+import { WorkerMethod, isWebpackBundlerPresent, isWorkerSupported } from "./abstractWorker";
 import { WebWorker } from "./abstractWorker";
-import { CancellationToken } from "./abstractWorker";
+import { CancellationToken } from "./cancellationToken";
 
 export class InlineWorker extends WebWorker {
   private cancellationToken: CancellationToken | null;
@@ -15,8 +15,8 @@ export class InlineWorker extends WebWorker {
     if (!isWorkerSupported()) {
       throw new Error('Web Worker is not supported');
     }
-    this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
 
+    this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
     let funcbody = func.toString()
 
     if(isWebpackBundlerPresent()) {
