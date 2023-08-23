@@ -1,5 +1,4 @@
 import { CancellationToken } from "./cancellationToken";
-import { cancellable, observable, subscribable, promisify, cancelled } from "./decorators";
 
 
 
@@ -44,20 +43,42 @@ export class InlineWorker {
     }
 
     this.fnBody = `
-      self.onmessage = function (event) {
-        self.cancellationBuffer = new Int32Array(event.data.cancellationBuffer ?? new ArrayBuffer(4));
-        const func = (${cancellable.name}(${observable.name}(${subscribable.name}(${taskBody}))));
-        const promise = ${promisify.name}(func);
-        promise(event.data.data, {})
-          .then(value => { if(!${cancelled.name}()) { self.postMessage({type: "done", value: value}); }
-                           else { self.postMessage({type: "cancelled", value: undefined}); }})
-          .catch(error => self.postMessage({type: "error", error: error}));
-      };`;
+
+    function __worker_cancelled__() {
+      return Atomics.load(__worker_cancellationBuffer__, 0) === 1;
+    }
+
+    function __worker_next__(value) {
+      self.postMessage({type: 'next', value});
+    }
+
+    function __worker_progress__(value) {
+      self.postMessage({type: 'progress', value});
+    }
+
+    self.onmessage = function (event) {
+      __worker_cancellationBuffer__ = new Int32Array(event.data.cancellationBuffer ?? new ArrayBuffer(4));
+      const promise = new Promise((__worker_resolve__, __worker_reject__) => {
+        let __worker_resolved__ = false, __worker_rejected__ = false;
+        const __worker_done__ = (args) => { __worker_resolved__ = true; __worker_resolve__(args); };
+        const __worker_error__ = (args) => { __worker_rejected__ = true; __worker_reject__(args); };
+        __worker_data__ = event.data.data; __worker_helpers__ = {cancelled: __worker_cancelled__, next: __worker_next__, progress: __worker_progress__, done: __worker_done__, error: __worker_error__};
+        console.log(__worker_data__,__worker_helpers__);
+        const __worker_result__ = (${taskBody})(__worker_data__, __worker_helpers__);
+        if (__worker_result__ instanceof Promise) {
+          return __worker_result__.then(__worker_resolve__, __worker_reject__);
+        } else if(!__worker_resolved__ && !__worker_rejected__ && __worker_result__ !== undefined) {
+          __worker_resolve__(__worker_result__); return __worker_result__;
+        } else if(__worker_cancelled__()) {
+          __worker_resolve__(undefined); return;
+        }
+      }).then(value => { if(!__worker_cancelled__()) { self.postMessage({type: "done", value: value}); }
+                          else { self.postMessage({type: "cancelled", value: undefined}); }})
+        .catch(error => self.postMessage({type: "error", error: error}));
+    };`;
 
     this.worker = this.promise = null;
     this.injected  = []; this.onprogress = this.onnext = () => {};
-    this.inject(cancelled);
-    this.inject(cancelled, cancellable, observable, subscribable, promisify);
   }
 
   public static terminate(workers: InlineWorker[]): void {
