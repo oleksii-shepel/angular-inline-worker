@@ -14,7 +14,10 @@
     "inline",
     "cancellable",
     "subscribable",
-    "observable"
+    "observable",
+    "lazy-loading",
+    "webpack",
+    "chunks"
   ],
   "author": "Oleksii Shepel",
   "license": "MIT",
