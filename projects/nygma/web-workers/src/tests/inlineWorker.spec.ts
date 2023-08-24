@@ -1,6 +1,7 @@
 /* global InlineWorker */
 
-import { InlineWorker, WorkerHelpers } from '../lib/inlineWorker';
+import { WorkerHelpers } from '../lib/abstractWorker'
+import { InlineWorker } from '../lib/inlineWorker';
 
 export function cube(n: any) {
   return n * n * n;

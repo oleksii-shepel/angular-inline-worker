@@ -1,6 +1,6 @@
 {
   "name": "nygma-web-workers",
-  "version": "1.0.12",
+  "version": "1.0.14",
   "description": "Inline cancellable web-workers with progress notification",
   "main": "public-api.d.ts",
   "scripts": {
@@ -14,7 +14,10 @@
     "inline",
     "cancellable",
     "subscribable",
-    "observable"
+    "observable",
+    "lazy-loading",
+    "webpack",
+    "chunks"
   ],
   "author": "Oleksii Shepel",
   "license": "MIT",
