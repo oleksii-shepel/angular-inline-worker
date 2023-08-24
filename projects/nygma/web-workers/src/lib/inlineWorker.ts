@@ -14,23 +14,23 @@ export class CancellationToken {
     this.array = new Int32Array(this.shared);
   }
 
-  public cancel(): void {
+  cancel(): void {
     if (this.array) {
       Atomics.store(this.array, 0, 1);
     }
   }
 
-  public reset(): void {
+  reset(): void {
     if (this.array) {
       Atomics.store(this.array, 0, 0);
     }
   }
 
-  public get cancelled(): boolean {
+  get cancelled(): boolean {
     return !!this.array && this.array[0] === 1;
   }
 
-  public get buffer(): ArrayBuffer {
+  get buffer(): ArrayBuffer {
     return this.shared;
   }
 }
@@ -81,23 +81,23 @@ export class InlineWorker {
     this.worker = this.promise = null; this.injected  = []; this.onprogress = this.onnext = () => {};
   }
 
-  public static terminate(workers: InlineWorker[]): void {
+  static terminate(workers: InlineWorker[]): void {
     workers.forEach(worker => worker.worker?.terminate());
   }
 
-  public cancel(): void {
+  cancel(): void {
     if(this.worker) {
       this.cancellationToken?.cancel();
     }
   }
 
-  public terminate(): void {
+  terminate(): void {
     if(this.worker) {
       this.worker.terminate();
     }
   }
 
-  public run(data?: any, transferList?: Transferable[]): Promise<any> {
+  run(data?: any, transferList?: Transferable[]): Promise<any> {
     if(!this.promise) {
       this.cancellationToken?.reset();
       let blob = new Blob([this.fnBody].concat(this.injected), { type: 'application/javascript' });
@@ -131,7 +131,7 @@ export class InlineWorker {
     return this;
   }
 
-  public inject(...args: Function[]): InlineWorker {
+  inject(...args: Function[]): InlineWorker {
     this.injected = this.injected ?? []
     for (let i = 0; i < args.length; i++) {
       let fn: Function = args[i];
