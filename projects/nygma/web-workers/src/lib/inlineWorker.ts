@@ -1,6 +1,4 @@
 
-
-
 export class CancellationToken {
   private shared: ArrayBuffer;
   private array: Int32Array;
@@ -35,8 +33,6 @@ export class CancellationToken {
   }
 }
 
-
-
 export interface WorkerHelpers {
   cancelled: Function;
   next: Function;
@@ -45,15 +41,9 @@ export interface WorkerHelpers {
   error: Function;
 }
 
-
-
 export type WorkerResult = any;
 
-
-
 export type WorkerMethod = (data: any, helpers: WorkerHelpers | any) => WorkerResult | Promise<WorkerResult>;
-
-
 
 export class InlineWorker {
   private cancellationToken: CancellationToken | null;
