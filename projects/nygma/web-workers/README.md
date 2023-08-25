@@ -13,7 +13,6 @@
 </p>
 
 ```typescript
-
 export function task(data: number, {progress, cancelled, done}: WorkerHelpers) {
   progress(0);
   let value = 0;
@@ -65,23 +64,73 @@ export function timer(data: number, {done, next, cancelled}: WorkerHelpers) {
 ```
 
 <p align="justify">
-With a brief overview of the tasks, we're now prepared to create an inline worker instance. Nothing special, just a call of worker constructor with one parameter that represents task function. To initiate the execution we have to call run method. This method returns the promise object which is awaitable, so you can wait for task completeness.
+Initializing a worker isn't complicated either. You simply specify a function to call and set up callbacks for worker events. After that, you pass your parameters to the task and wait for it to complete.  
 </p>
 
 ```typescript
-let worker: InlineWorker = new InlineWorker(task);
+let worker: WebWorker = new InlineWorker(task);
 
 let promise = this.worker.progress((value) => console.log(value)).run(1234567890);
 await Promise.all([worker])
 ```
 <p align="justify">
-Concerning the worker it makes sense to mention its auxiliary methods that can enhance your workflow. For instance, you can inject needed global functions into worker. One of the pitfalls here is the function decoration made by webpack. This case is already taken into account. If you do not like the idea of cancellation or you have troubles with SharedBufferArray creation you can use terminate method which will silently kill the worker. To observe the progress of the execution, the callback function have to be passed as a parameter to progress method. 
+That's it. In addition, you can inject helper methods into the worker body. Seems like it is an prominent feature among the obvious shortcomings. The inline worker supports native async functions, but you have to tune the build process of the application to ensure that async functions outlive the transpilation. I have set up a <a href="https://github.com/oleksii-shepel/angular-babel-karma">skeleton</a> for such applications available on Github.
 </p>
 
+What else? How about the use of webpack chunks as workers instead? Sounds promising. In fine we will have the worker that can be async, can import functionality from other modules, can contain class definitions and use object instances. Obviously we can benefit from having control over bundling process. Potentially we can remove sensitive information from the module and inject it right before the execution, if it weren't the ability to view the content of the blobs in the browser. So let me introduce my own worker type: ModuleWorker. 
+</p>
 <p align="justify">
-I would like to think that this library will make it easier to write concurrent code, which is still considered a gimmick for the browser. Potentially the library can be used with native async functions, but you have to tune the build process of the application to ensure that async functions outlive the transpilation. I have set up a <a href="https://github.com/oleksii-shepel/angular-babel-karma">skeleton</a> for such applications available on Github.
+Firstly, I have to state that the solution is viable and stable. After all the development process I have become a worker that is performant enough and can be lazy-loaded and there are no analogs. Using the module worker is no different from an inline worker. I tried to keep the proposed interface for interacting with the worker. And I did it. The only difference we have is found in a constructor call. Let's look at the worker definition:
 </p>
 
+```typescript
+let worker: WebWorker = new ModuleWorker('./webworker.js', 'timer');
+
+let promise = this.worker.progress((value) => console.log(value)).run(10000);
+await Promise.all([worker])
+```
 <p align="justify">
-Stay tuned and have fun with programming! Lines of code, like chapters in a book, come together to tell a story of your digital adventures. ChatGPT doesn't lie.
+The worker constructor takes as parameters the path to the generated worker chunk and the name of worker method. So you can reuse the same module with different worker methods. The second parameter is optional and in case there is only one method defined in the module or default method specified, it can be resolved automatically. The worker method definition is preserved and all the description above suits to the new worker type. The only condition to met is the use of Webpack as a bundler.
+</p>
+<p align="justify">
+Setting up the bundler is not difficult at all. You specify a new entry point for the worker and disable one of the optimizations associated with the used exports (usedExports: false). You don't need to embed the chunk in the index page as it will be loaded on demand. To suffix the name of the chunk with a hash look towards DefinePlugin, so you can get access to it through process.env variable. 
+</p>
+
+```javascript
+const path = require('path');
+
+module.exports = {
+  mode: 'production',
+  optimization: {
+    usedExports: false,
+  },
+  entry: {
+    webworker: './projects/app/src/webworker.ts',
+  },
+
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+  },
+  resolve: {
+    extensions: ['.js', '.ts']
+  },
+  module: {
+    rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader'
+        }
+      }
+    ]
+  },
+  devServer: {
+    static: './dist'
+  }
+};
+```
+<p align="justify">
+In general, you have the opportunity to choose the right solution according to your needs. Thank you for reading. I would like to think that this library will make it easier to write concurrent code, which is still considered a gimmick for the browser. Stay tuned and have fun with programming! Lines of code, like chapters in a book, come together to tell a story of your digital adventures... 
+ChatGPT doesn't lie.
 </p>
