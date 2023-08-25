@@ -93,10 +93,44 @@ await Promise.all([worker])
 The worker constructor takes as parameters the path to the generated worker chunk and the name of worker method. So you can reuse the same module with different worker methods. The second parameter is optional and in case there is only one method defined in the module or default method specified, it can be resolved automatically. The worker method definition is preserved and all the description above suits to the new worker type. The only condition to met is the use of Webpack as a bundler.
 </p>
 <p align="justify">
-Setting up the bundler is not difficult at all. You specify a new entry point for the worker and disable one of the optimizations associated with the used exports (usedExports: false). You don't need to embed the chunk in the index page as it will be loaded on demand. To suffix the name of the chunk with a hash look towards DefinePlugin, so you can get access to it through process.env variable. Finally, you have the opportunity to choose the right solution according to your needs. Thank you for reading.
+Setting up the bundler is not difficult at all. You specify a new entry point for the worker and disable one of the optimizations associated with the used exports (usedExports: false). You don't need to embed the chunk in the index page as it will be loaded on demand. To suffix the name of the chunk with a hash look towards DefinePlugin, so you can get access to it through process.env variable. 
 </p>
 
+```javascript
+const path = require('path');
+
+module.exports = {
+  mode: 'production',
+  optimization: {
+    usedExports: false,
+  },
+  entry: {
+    webworker: './projects/app/src/webworker.ts',
+  },
+
+  output: {
+    path: path.resolve(__dirname, 'dist'),
+  },
+  resolve: {
+    extensions: ['.js', '.ts']
+  },
+  module: {
+    rules: [
+      {
+        test: /\.ts$/,
+        exclude: /node_modules/,
+        use: {
+          loader: 'babel-loader'
+        }
+      }
+    ]
+  },
+  devServer: {
+    static: './dist'
+  }
+};
+```
 <p align="justify">
-I would like to think that this library will make it easier to write concurrent code, which is still considered a gimmick for the browser. Stay tuned and have fun with programming! Lines of code, like chapters in a book, come together to tell a story of your digital adventures... 
+In general, you have the opportunity to choose the right solution according to your needs. Thank you for reading. I would like to think that this library will make it easier to write concurrent code, which is still considered a gimmick for the browser. Stay tuned and have fun with programming! Lines of code, like chapters in a book, come together to tell a story of your digital adventures... 
 ChatGPT doesn't lie.
 </p>
