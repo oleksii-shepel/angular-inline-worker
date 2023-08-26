@@ -76,7 +76,7 @@ export type WorkerMethod = (data: any, helpers: WorkerHelpers | any) => WorkerRe
 
 export class InlineWorker {
   private cancellationToken: CancellationToken | null;
-  private workerBody: string;
+  private workerbody: string;
   private worker: Worker | null;
   private onprogress: ((data: number) => void);
   private onnext: ((data: any) => void);
@@ -98,7 +98,7 @@ export class InlineWorker {
       funcbody = funcbody.replace(/\((?:.*,)(?:.*WEBPACK_IMPORTED_MODULE.*\.)(.*)\)(\(.*\))/g, "$1$2");
     }
 
-    this.workerBody = `function __worker_cancelled__(){return __worker_tokenIndex__>-1&&1===Atomics.load(__worker_cancellationBuffer__,__worker_tokenIndex__)}function __worker_next__(e){self.postMessage({type:"next",value:e})}function __worker_progress__(e){self.postMessage({type:"progress",value:e})}self.onmessage=function(e){__worker_cancellationBuffer__=new Int32Array(e.data.cancellationBuffer),__worker_tokenIndex__=e.data.tokenIndex,new Promise((r,n)=>{let o=!1,t=!1,a=e=>{o=!0,r(e)},s=e=>{t=!0,n(e)};__worker_data__=e.data.data,__worker_helpers__={cancelled:__worker_cancelled__,next:__worker_next__,progress:__worker_progress__,done:a,error:s};let c=(${funcbody})(__worker_data__,__worker_helpers__);if(c instanceof Promise)return c.then(r,n);if(!o&&!t&&void 0!==c)return r(c),c;if(__worker_cancelled__()){r(void 0);return}}).then(e=>{__worker_cancelled__()?self.postMessage({type:"cancelled",value:void 0}):self.postMessage({type:"done",value:e})}).catch(e=>self.postMessage({type:"error",error:e}))};`
+    this.workerbody = `function __worker_cancelled__(){return __worker_tokenIndex__>-1&&1===Atomics.load(__worker_cancellationBuffer__,__worker_tokenIndex__)}function __worker_next__(e){self.postMessage({type:"next",value:e})}function __worker_progress__(e){self.postMessage({type:"progress",value:e})}self.onmessage=function(e){__worker_cancellationBuffer__=new Int32Array(e.data.cancellationBuffer),__worker_tokenIndex__=e.data.tokenIndex,new Promise((r,n)=>{let o=!1,t=!1,a=e=>{o=!0,r(e)},s=e=>{t=!0,n(e)};__worker_data__=e.data.data,__worker_helpers__={cancelled:__worker_cancelled__,next:__worker_next__,progress:__worker_progress__,done:a,error:s};let c=(${funcbody})(__worker_data__,__worker_helpers__);if(c instanceof Promise)return c.then(r,n);if(!o&&!t&&void 0!==c)return r(c),c;if(__worker_cancelled__()){r(void 0);return}}).then(e=>{__worker_cancelled__()?self.postMessage({type:"cancelled",value:void 0}):self.postMessage({type:"done",value:e})}).catch(e=>self.postMessage({type:"error",error:e}))};`
     this.cancellationToken = this.promise = null; this.resolve = () => {}; this.reject = () => {};
     this.worker = null; this.injected  = []; this.onprogress = this.onnext = () => {};
   }
@@ -125,7 +125,7 @@ export class InlineWorker {
   run(data?: any, transferList?: Transferable[]): Promise<any> {
     if(!this.promise) {
       this.cancellationToken = CancellationToken.register();
-      let blob = new Blob([this.workerBody].concat(this.injected), { type: 'application/javascript' });
+      let blob = new Blob([this.workerbody].concat(this.injected), { type: 'application/javascript' });
       this.worker = new Worker(URL.createObjectURL(blob));
       this.worker.postMessage({ data: data, cancellationBuffer: CancellationToken.buffer, tokenIndex: this.cancellationToken.index}, transferList as any);
       this.promise = new Promise((resolve, reject) => {
