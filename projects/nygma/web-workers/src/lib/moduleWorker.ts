@@ -55,7 +55,7 @@ export class ModuleWorker extends WebWorker {
     }).then((content) => {
       ModuleWorker.chunksLoaded.set(this.chunk, content);
       return content;
-    });
+    }).catch(() => { throw new Error("Module loading failed"); });
   }
 
   run(data?: any, transferList?: Transferable[]): Promise<any> {
