@@ -22,7 +22,7 @@ export class ModuleWorker extends WebWorker {
       throw new Error('Web Worker is not supported');
     }
 
-    if(isWebpackBundlerPresent()) {
+    if(!isWebpackBundlerPresent()) {
       throw new Error('Module worker supports only webpack bundles');
     }
 
