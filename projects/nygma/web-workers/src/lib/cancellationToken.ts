@@ -20,7 +20,6 @@ export class CancellationToken {
     } else if(CancellationToken.withinArray(index)) {
       this.booked[index] = true;
       Atomics.store(CancellationToken.array, index, 0);
-    } else {
       this.allocatedTokens++;
     }
     return new CancellationToken(index);
@@ -80,3 +79,4 @@ export function isCancellationSupported(): boolean {
 if(!isCancellationSupported()) {
   console.warn("CancellationToken is not supported in this environment. Please add following two headers to the top level document: 'Cross-Origin-Embedder-Policy': 'require-corp'; 'Cross-Origin-Opener-Policy': 'same-origin';");
 }
+
