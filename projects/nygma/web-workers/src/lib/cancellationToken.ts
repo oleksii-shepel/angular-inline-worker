@@ -2,7 +2,6 @@
 export class CancellationToken {
   static MAX_NUMBER_OF_WORKERS = 128;
 
-  private static booked: boolean[] = new Array<boolean>(this.MAX_NUMBER_OF_WORKERS);
   private static shared: ArrayBuffer = crossOriginIsolated? new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * this.MAX_NUMBER_OF_WORKERS): new ArrayBuffer(0);
   private static array: Int32Array = new Int32Array(this.shared);
   private static allocatedTokens = 0;
@@ -14,19 +13,18 @@ export class CancellationToken {
   }
 
   static register(): CancellationToken {
-    const index = this.findIndex(this.allocatedTokens, (index: number) => !this.booked[index]);
+    const index = this.findIndex(this.allocatedTokens, (index: number) => { let item = Atomics.load(this.array, index); return !item || item === 2; });
     if(index === -1 && !(this.buffer instanceof ArrayBuffer)) {
       throw new Error('Number of simultaneously used cancellation tokens exceeded the admissible limit');
     } else if (CancellationToken.withinArray(index)){
-      this.booked[index] = true;
       Atomics.store(CancellationToken.array, index, 0);
       this.allocatedTokens++;
     }
     return new CancellationToken(index);
   }
 
-  free() {
-    CancellationToken.booked[this.tokenIndex] = false;
+  release() {
+    Atomics.store(CancellationToken.array, this.tokenIndex, 2);
   }
 
   cancel(): void {
@@ -54,11 +52,11 @@ export class CancellationToken {
   }
 
   private static withinArray(index: number): boolean {
-    return index > -1 && this.booked.length > index;
+    return index > -1 && this.MAX_NUMBER_OF_WORKERS > index;
   }
 
   private static findIndex(start: number, predicate: Function): number {
-    const arrayLength = this.booked.length;
+    const arrayLength = this.MAX_NUMBER_OF_WORKERS;
     let unchecked = arrayLength;
     while(unchecked !== 0) {
       if(start > arrayLength) { start %= arrayLength; }
