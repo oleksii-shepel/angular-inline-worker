@@ -106,7 +106,7 @@ export class ModuleWorker extends WebWorker {
               const __worker_error__ = (args) => { __worker_rejected__ = true; ____worker_reject__(args); };
               __worker_data__ = event.data.data; __worker_helpers__ = {cancelled: __worker_cancelled__, next: __worker_next__, progress: __worker_progress__, done: __worker_done__, error: __worker_error__};
 
-              let a = eval('{content}');
+              ${content}
 
               __webpack_modules__ = self["webpackChunkapp2"][0][1];
               __webpack_load_module__ = self["webpackChunkapp2"][0][2];
@@ -114,7 +114,7 @@ export class ModuleWorker extends WebWorker {
               let __webpack_export_functions__ = Object.assign({}, __webpack_require__.e);
               delete __webpack_export_functions__.__esModule;
               let __webpack_function_names__ = Object.keys(__webpack_export_functions__);
-              let __webpack_function__ = '{this.funcname}';
+              let __webpack_function__ = '${this.funcname}';
               let __worker_result__ = undefined;
               if(__webpack_function__ !== '__webpack_undefined__') {
                 __worker_result__= __webpack_export_functions__[__webpack_function__](__worker_data__, __worker_helpers__);
