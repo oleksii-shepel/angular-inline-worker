@@ -9,6 +9,9 @@ export class InlineWorker extends WebWorker {
   private onnext: ((data: any) => void);
   private injected: string[];
   private promise: Promise<any> | null;
+  private resolve: (args: any) => void;
+  private reject: (args: any) => void;
+
   constructor(func: WorkerMethod) {
     super();
 
@@ -25,18 +28,21 @@ export class InlineWorker extends WebWorker {
     }
 
     this.workerbody = `function __worker_cancelled__(){return 1===Atomics.load(__worker_cancellationBuffer__,0)}function __worker_next__(e){self.postMessage({type:"next",value:e})}function __worker_progress__(e){self.postMessage({type:"progress",value:e})}self.onmessage=function(event){__worker_cancellationBuffer__=new Int32Array(event.data.cancellationBuffer??new ArrayBuffer(4));let __worker_promise__=new Promise((__worker_resolve__,__worker_reject__)=>{let __worker_resolved__=!1,__worker_rejected__=!1,__worker_done__=e=>{__worker_resolved__=!0,__worker_resolve__(e)},__worker_error__=e=>{__worker_rejected__=!0,__worker_reject__(e)};__worker_data__=event.data.data,__worker_helpers__={cancelled:__worker_cancelled__,next:__worker_next__,progress:__worker_progress__,done:__worker_done__,error:__worker_error__};let __worker_result__=(${funcbody})(__worker_data__,__worker_helpers__);if(__worker_result__ instanceof Promise)return __worker_result__.then(__worker_resolve__,__worker_reject__);if(!__worker_resolved__&&!__worker_rejected__&&void 0!==__worker_result__)return __worker_resolve__(__worker_result__),__worker_result__;if(__worker_cancelled__()){__worker_resolve__(void 0);return}}).then(e=>{__worker_cancelled__()?self.postMessage({type:"cancelled",value:void 0}):self.postMessage({type:"done",value:e})}).catch(e=>self.postMessage({type:"error",error:e}))};`;
-    this.promise = null; this.injected  = []; this.onprogress = this.onnext = () => {};
+    this.promise = null; this.resolve = () => {}; this.reject = () => {};
+    this.injected  = []; this.onprogress = this.onnext = () => {};
+  }
+
+  terminate(): void {
+    if(this.promise) {
+      this.worker?.terminate();
+      this.promise = null;
+      this.resolve(undefined);
+    }
   }
 
   cancel(): void {
     if(this.worker) {
       this.cancellationToken?.cancel();
-    }
-  }
-
-  terminate(): void {
-    if(this.worker) {
-      this.worker.terminate();
     }
   }
 
@@ -47,6 +53,7 @@ export class InlineWorker extends WebWorker {
       this.worker = new Worker(URL.createObjectURL(blob));
       this.worker.postMessage({ data: data, cancellationBuffer: this.cancellationToken?.buffer}, transferList as any);
       this.promise = new Promise((resolve, reject) => {
+        this.resolve = resolve; this.reject = reject;
         this.worker!.onmessage = (e: MessageEvent) => {
           if (e.data?.type === 'done') { this.promise = null; resolve(e.data.value); }
           else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }

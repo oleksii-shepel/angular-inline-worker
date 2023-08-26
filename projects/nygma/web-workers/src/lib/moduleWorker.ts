@@ -8,9 +8,11 @@ export class ModuleWorker extends WebWorker {
   private onprogress: ((data: number) => void);
   private onnext: ((data: any) => void);
   private injected: string[];
-  private promise: Promise<any> | null;
   private chunk: string;
   private funcname: string | undefined;
+  private promise: Promise<any> | null;
+  private resolve: (args: any) => void;
+  private reject: (args: any) => void;
   private static chunksLoaded: Map<string, string> = new Map();
   constructor(chunk: string, funcname?: string) {
     super();
@@ -25,12 +27,15 @@ export class ModuleWorker extends WebWorker {
 
     this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
     this.chunk = chunk; this.funcname = funcname? funcname : "__webpack_undefined__";
-    this.workerbody = this.worker = this.promise = null; this.injected  = []; this.onprogress = this.onnext = () => {};
+    this.promise = null; this.resolve = () => {}; this.reject = () => {};
+    this.workerbody = this.worker = null; this.injected  = []; this.onprogress = this.onnext = () => {};
   }
 
   terminate(): void {
-    if(this.worker) {
-      this.worker.terminate();
+    if(this.promise) {
+      this.worker?.terminate();
+      this.promise = null;
+      this.resolve(undefined);
     }
   }
 
@@ -64,6 +69,7 @@ export class ModuleWorker extends WebWorker {
         this.worker = new Worker(URL.createObjectURL(blob));
         this.worker.postMessage({ data: data, cancellationBuffer: this.cancellationToken?.buffer}, transferList as any);
         this.promise = new Promise((resolve, reject) => {
+          this.resolve = resolve; this.reject = reject;
           this.worker!.onmessage = (e: MessageEvent) => {
             if (e.data?.type === 'done') { this.promise = null; resolve(e.data.value); }
             else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
