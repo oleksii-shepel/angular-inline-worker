@@ -15,12 +15,11 @@ export class CancellationToken {
 
   static register(): CancellationToken {
     const index = this.findIndex(this.allocatedTokens, (index: number) => this.booked[index] === false);
-    if(index === -1) {
-      throw new Error('Number of cancellation tokens exceeded the admissible limit');
-    } else if(CancellationToken.withinArray(index)) {
+    if(index === -1 && this.buffer instanceof SharedArrayBuffer) {
+      throw new Error('Number of allocated cancellation tokens exceeded the admissible limit');
+    } else if (CancellationToken.withinArray(index)){
       this.booked[index] = true;
       Atomics.store(CancellationToken.array, index, 0);
-    } else {
       this.allocatedTokens++;
     }
     return new CancellationToken(index);
