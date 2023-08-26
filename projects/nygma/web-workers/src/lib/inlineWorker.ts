@@ -70,7 +70,7 @@ export class InlineWorker extends WebWorker {
       this.worker?.terminate();
       this.promise = null;
       this.resolve(undefined);
-      this.cancellationToken?.free();
+      this.cancellationToken?.release();
     }
   }
 
@@ -89,11 +89,11 @@ export class InlineWorker extends WebWorker {
       this.promise = new Promise((resolve, reject) => {
         this.resolve = resolve; this.reject = reject;
         this.worker!.onmessage = (e: MessageEvent) => {
-          if (e.data?.type === 'done') { this.promise = null; resolve(e.data.value); this.cancellationToken?.free(); }
+          if (e.data?.type === 'done') { this.promise = null; resolve(e.data.value); this.cancellationToken?.release(); }
           else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
           else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
-          else if (e.data?.type === 'cancelled') { this.promise = null; resolve(undefined); this.cancellationToken?.free(); }
-          else if (e.data?.type === 'error') { this.promise = null; reject(e.data.error); this.cancellationToken?.free(); }
+          else if (e.data?.type === 'cancelled') { this.promise = null; resolve(undefined); this.cancellationToken?.release(); }
+          else if (e.data?.type === 'error') { this.promise = null; reject(e.data.error); this.cancellationToken?.release(); }
         }
       });
     }
