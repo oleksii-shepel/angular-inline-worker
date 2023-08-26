@@ -14,7 +14,7 @@ export class CancellationToken {
   }
 
   static register(): CancellationToken {
-    const index = this.findIndex(this.allocatedTokens, (index: number) => this.booked[index] === false);
+    const index = this.findIndex(this.allocatedTokens, (index: number) => !this.booked[index]);
     if(index === -1 && !(this.buffer instanceof ArrayBuffer)) {
       throw new Error('Number of simultaneously used cancellation tokens exceeded the admissible limit');
     } else if (CancellationToken.withinArray(index)){
