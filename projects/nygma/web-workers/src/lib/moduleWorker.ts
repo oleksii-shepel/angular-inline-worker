@@ -32,7 +32,7 @@ export class ModuleWorker extends WebWorker {
   }
 
   terminate(): void {
-    if(this.promise) {
+    if(this.running()) {
       this.worker?.terminate();
       this.promise = null;
       this.resolve(undefined);
