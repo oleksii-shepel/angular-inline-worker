@@ -1,37 +1,66 @@
 
-export class CancellationToken {
-  private shared: ArrayBuffer;
-  private array: Int32Array;
 
-  constructor() {
+export class CancellationToken {
+  static MAX_NUMBER_OF_WORKERS = 128;
+
+  private static booked: boolean[] = new Array<boolean>(this.MAX_NUMBER_OF_WORKERS);
+  private static shared: ArrayBuffer = crossOriginIsolated? new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * this.MAX_NUMBER_OF_WORKERS): new ArrayBuffer(0);
+  private static array: Int32Array = new Int32Array(this.shared);
+
+  private tokenIndex: number;
+
+  private constructor(offset: number) {
     if(!crossOriginIsolated) {
       console.warn("CancellationToken is not supported in this environment. Please add following two headers to the top level document: 'Cross-Origin-Embedder-Policy': 'require-corp'; 'Cross-Origin-Opener-Policy': 'same-origin';");
     }
 
-    this.shared = crossOriginIsolated? new SharedArrayBuffer(4): new ArrayBuffer(4);
-    this.array = new Int32Array(this.shared);
+    this.tokenIndex = offset;
   }
 
-  cancel(): void {
-    if (this.array) {
-      Atomics.store(this.array, 0, 1);
+  public static register(): CancellationToken {
+    const index = this.booked.findIndex(item => !item);
+    if(index === -1) {
+      throw new Error('Number of cancellation tokens exceeded the admissible limit');
+    } else if(CancellationToken.withinArray(index)) {
+      this.booked[index] = true;
+      Atomics.store(CancellationToken.array, index, 0);
+    }
+    return new CancellationToken(index);
+  }
+
+  public free() {
+    CancellationToken.booked[this.tokenIndex] = false;
+  }
+
+  public cancel(): void {
+    if (CancellationToken.array && CancellationToken.withinArray(this.tokenIndex)) {
+      Atomics.store(CancellationToken.array, this.tokenIndex, 1);
     }
   }
 
-  reset(): void {
-    if (this.array) {
-      Atomics.store(this.array, 0, 0);
+  public reset(): void {
+    if (CancellationToken.array && CancellationToken.withinArray(this.tokenIndex)) {
+      Atomics.store(CancellationToken.array, this.tokenIndex, 0);
     }
   }
 
-  get cancelled(): boolean {
-    return !!this.array && this.array[0] === 1;
+  public get cancelled(): boolean {
+    return CancellationToken.withinArray(this.tokenIndex) && Atomics.load(CancellationToken.array, this.tokenIndex) === 1;
   }
 
-  get buffer(): ArrayBuffer {
-    return this.shared;
+  public get index(): number {
+    return this.tokenIndex
+  }
+
+  public static get buffer(): ArrayBuffer {
+    return CancellationToken.shared;
+  }
+
+  private static withinArray(index: number): boolean {
+    return index > -1 && CancellationToken.array.byteLength / 4 > index;
   }
 }
+
 
 export interface WorkerHelpers {
   cancelled: Function;
@@ -61,7 +90,6 @@ export class InlineWorker {
     if (!isWorkerSupported()) {
       throw new Error('Web Worker is not supported');
     }
-    this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
 
     let taskBody = task.toString()
 
@@ -71,7 +99,7 @@ export class InlineWorker {
     }
 
     this.fnBody = `function __worker_cancelled__(){return 1===Atomics.load(__worker_cancellationBuffer__,0)}function __worker_next__(e){self.postMessage({type:"next",value:e})}function __worker_progress__(e){self.postMessage({type:"progress",value:e})}self.onmessage=function(event){__worker_cancellationBuffer__=new Int32Array(event.data.cancellationBuffer??new ArrayBuffer(4));let promise=new Promise((__worker_resolve__,__worker_reject__)=>{let __worker_resolved__=!1,__worker_rejected__=!1,__worker_done__=e=>{__worker_resolved__=!0,__worker_resolve__(e)},__worker_error__=e=>{__worker_rejected__=!0,__worker_reject__(e)};__worker_data__=event.data.data,__worker_helpers__={cancelled:__worker_cancelled__,next:__worker_next__,progress:__worker_progress__,done:__worker_done__,error:__worker_error__},console.log(__worker_data__,__worker_helpers__);let __worker_result__=(${taskBody})(__worker_data__,__worker_helpers__);if(__worker_result__ instanceof Promise)return __worker_result__.then(__worker_resolve__,__worker_reject__);if(!__worker_resolved__&&!__worker_rejected__&&void 0!==__worker_result__)return __worker_resolve__(__worker_result__),__worker_result__;if(__worker_cancelled__()){__worker_resolve__(void 0);return}}).then(e=>{__worker_cancelled__()?self.postMessage({type:"cancelled",value:void 0}):self.postMessage({type:"done",value:e})}).catch(e=>self.postMessage({type:"error",error:e}))};`
-    this.promise = null; this.resolve = () => {}; this.reject = () => {};
+    this.cancellationToken = this.promise = null; this.resolve = () => {}; this.reject = () => {};
     this.worker = null; this.injected  = []; this.onprogress = this.onnext = () => {};
   }
 
@@ -90,23 +118,24 @@ export class InlineWorker {
       this.worker?.terminate();
       this.promise = null;
       this.resolve(undefined);
+      this.cancellationToken?.free();
     }
   }
 
   run(data?: any, transferList?: Transferable[]): Promise<any> {
     if(!this.promise) {
-      this.cancellationToken?.reset();
+      this.cancellationToken = CancellationToken.register();
       let blob = new Blob([this.fnBody].concat(this.injected), { type: 'application/javascript' });
       this.worker = new Worker(URL.createObjectURL(blob));
-      this.worker.postMessage({ data: data, cancellationBuffer: this.cancellationToken?.buffer}, transferList as any);
+      this.worker.postMessage({ data: data, cancellationBuffer: CancellationToken.buffer, tokenIndex: this.cancellationToken.index}, transferList as any);
       this.promise = new Promise((resolve, reject) => {
         this.resolve = resolve; this.reject = reject;
         this.worker!.onmessage = (e: MessageEvent) => {
-          if (e.data?.type === 'done') { this.promise = null; resolve(e.data.value); }
+          if (e.data?.type === 'done') { this.promise = null; resolve(e.data.value); this.cancellationToken?.free(); }
           else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
           else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
-          else if (e.data?.type === 'cancelled') { this.promise = null; resolve(undefined); }
-          else if (e.data?.type === 'error') { this.promise = null; reject(e.data.error); }
+          else if (e.data?.type === 'cancelled') { this.promise = null; resolve(undefined); this.cancellationToken?.free(); }
+          else if (e.data?.type === 'error') { this.promise = null; reject(e.data.error); this.cancellationToken?.free(); }
         }
       });
     }
