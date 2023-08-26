@@ -17,7 +17,7 @@ export class CancellationToken {
     this.tokenIndex = offset;
   }
 
-  public static register(): CancellationToken {
+  static register(): CancellationToken {
     const index = this.booked.findIndex(item => !item);
     if(index === -1) {
       throw new Error('Number of cancellation tokens exceeded the admissible limit');
@@ -28,31 +28,31 @@ export class CancellationToken {
     return new CancellationToken(index);
   }
 
-  public free() {
+  free() {
     CancellationToken.booked[this.tokenIndex] = false;
   }
 
-  public cancel(): void {
+  cancel(): void {
     if (CancellationToken.array && CancellationToken.withinArray(this.tokenIndex)) {
       Atomics.store(CancellationToken.array, this.tokenIndex, 1);
     }
   }
 
-  public reset(): void {
+  reset(): void {
     if (CancellationToken.array && CancellationToken.withinArray(this.tokenIndex)) {
       Atomics.store(CancellationToken.array, this.tokenIndex, 0);
     }
   }
 
-  public get cancelled(): boolean {
+  get cancelled(): boolean {
     return CancellationToken.withinArray(this.tokenIndex) && Atomics.load(CancellationToken.array, this.tokenIndex) === 1;
   }
 
-  public get index(): number {
+  get index(): number {
     return this.tokenIndex
   }
 
-  public static get buffer(): ArrayBuffer {
+  static get buffer(): ArrayBuffer {
     return CancellationToken.shared;
   }
 
