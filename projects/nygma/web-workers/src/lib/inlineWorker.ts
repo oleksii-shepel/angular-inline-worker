@@ -19,7 +19,6 @@ export class InlineWorker extends WebWorker {
       throw new Error('Web Worker is not supported');
     }
 
-    this.cancellationToken = crossOriginIsolated? new CancellationToken(): null;
     let funcbody = func.toString()
 
     if(isWebpackBundlerPresent()) {
@@ -30,7 +29,7 @@ export class InlineWorker extends WebWorker {
     this.workerbody = `
 
       function __worker_cancelled__() {
-        return Atomics.load(__worker_cancellationBuffer__, 0) === 1;
+        return __worker_tokenIndex__ > -1 && Atomics.load(__worker_cancellationBuffer__, __worker_tokenIndex__) === 1;
       }
 
       function __worker_next__(value) {
@@ -42,7 +41,8 @@ export class InlineWorker extends WebWorker {
       }
 
       self.onmessage = function (event) {
-        __worker_cancellationBuffer__ = new Int32Array(event.data.cancellationBuffer ?? new ArrayBuffer(4));
+        __worker_cancellationBuffer__ = new Int32Array(event.data.cancellationBuffer);
+        __worker_tokenIndex__ = event.data.tokenIndex;
         const __worker_promise__ = new Promise((__worker_resolve__, __worker_reject__) => {
           let __worker_resolved__ = false, __worker_rejected__ = false;
           const __worker_done__ = (args) => { __worker_resolved__ = true; __worker_resolve__(args); };
@@ -61,7 +61,7 @@ export class InlineWorker extends WebWorker {
           .catch(error => self.postMessage({type: "error", error: error}));
       };`;
 
-    this.promise = null; this.resolve = () => {}; this.reject = () => {};
+    this.cancellationToken = this.promise = null; this.resolve = () => {}; this.reject = () => {};
     this.injected  = []; this.onprogress = this.onnext = () => {};
   }
 
@@ -70,29 +70,30 @@ export class InlineWorker extends WebWorker {
       this.worker?.terminate();
       this.promise = null;
       this.resolve(undefined);
+      this.cancellationToken?.free();
     }
   }
 
   cancel(): void {
-    if(this.worker) {
+    if(this.running()) {
       this.cancellationToken?.cancel();
     }
   }
 
   run(data?: any, transferList?: Transferable[]): Promise<any> {
     if(!this.promise) {
-      this.cancellationToken?.reset();
+      this.cancellationToken = CancellationToken.register();
       let blob = new Blob([this.workerbody].concat(this.injected), { type: 'application/javascript' });
       this.worker = new Worker(URL.createObjectURL(blob));
-      this.worker.postMessage({ data: data, cancellationBuffer: this.cancellationToken?.buffer}, transferList as any);
+      this.worker.postMessage({ data: data, cancellationBuffer: CancellationToken.buffer, tokenIndex: this.cancellationToken.index}, transferList as any);
       this.promise = new Promise((resolve, reject) => {
         this.resolve = resolve; this.reject = reject;
         this.worker!.onmessage = (e: MessageEvent) => {
-          if (e.data?.type === 'done') { this.promise = null; resolve(e.data.value); }
+          if (e.data?.type === 'done') { this.promise = null; resolve(e.data.value); this.cancellationToken?.free(); }
           else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
           else if (e.data?.type === 'next') { this.onnext && this.onnext(e.data.value); }
-          else if (e.data?.type === 'cancelled') { this.promise = null; resolve(undefined); }
-          else if (e.data?.type === 'error') { this.promise = null; reject(e.data.error); }
+          else if (e.data?.type === 'cancelled') { this.promise = null; resolve(undefined); this.cancellationToken?.free(); }
+          else if (e.data?.type === 'error') { this.promise = null; reject(e.data.error); this.cancellationToken?.free(); }
         }
       });
     }
