@@ -108,13 +108,13 @@ export class InlineWorker {
   }
 
   cancel(): void {
-    if(this.worker) {
+    if(this.running()) {
       this.cancellationToken?.cancel();
     }
   }
 
   terminate(): void {
-    if(this.promise) {
+    if(this.running()) {
       this.worker?.terminate();
       this.promise = null;
       this.resolve(undefined);
