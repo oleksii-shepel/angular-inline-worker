@@ -30,13 +30,13 @@ export class CancellationToken {
   }
 
   cancel(): void {
-    if (CancellationToken.array && CancellationToken.withinArray(this.tokenIndex)) {
+    if (CancellationToken.withinArray(this.tokenIndex)) {
       Atomics.store(CancellationToken.array, this.tokenIndex, 1);
     }
   }
 
   reset(): void {
-    if (CancellationToken.array && CancellationToken.withinArray(this.tokenIndex)) {
+    if (CancellationToken.withinArray(this.tokenIndex)) {
       Atomics.store(CancellationToken.array, this.tokenIndex, 0);
     }
   }
@@ -54,11 +54,11 @@ export class CancellationToken {
   }
 
   private static withinArray(index: number): boolean {
-    return index > -1 && CancellationToken.array.byteLength / Int32Array.BYTES_PER_ELEMENT > index;
+    return index > -1 && this.booked.length > index;
   }
 
   private static findIndex(start: number, predicate: Function): number {
-    const arrayLength = CancellationToken.array.byteLength / Int32Array.BYTES_PER_ELEMENT;
+    const arrayLength = this.booked.length;
     let unchecked = arrayLength;
     while(unchecked !== 0) {
       if(start > arrayLength) { start %= arrayLength; }
