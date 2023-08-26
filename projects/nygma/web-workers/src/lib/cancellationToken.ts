@@ -9,10 +9,6 @@ export class CancellationToken {
   private tokenIndex: number;
 
   private constructor(offset: number) {
-    if(!crossOriginIsolated) {
-      console.warn("CancellationToken is not supported in this environment. Please add following two headers to the top level document: 'Cross-Origin-Embedder-Policy': 'require-corp'; 'Cross-Origin-Opener-Policy': 'same-origin';");
-    }
-
     this.tokenIndex = offset;
   }
 
@@ -59,3 +55,14 @@ export class CancellationToken {
     return index > -1 && CancellationToken.array.byteLength / 4 > index;
   }
 }
+
+
+export function isCancellationSupported(): boolean {
+  return crossOriginIsolated;
+}
+
+
+if(!isCancellationSupported()) {
+  console.warn("CancellationToken is not supported in this environment. Please add following two headers to the top level document: 'Cross-Origin-Embedder-Policy': 'require-corp'; 'Cross-Origin-Opener-Policy': 'same-origin';");
+}
+
