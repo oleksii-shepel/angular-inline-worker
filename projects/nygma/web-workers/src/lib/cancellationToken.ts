@@ -13,18 +13,18 @@ export class CancellationToken {
   }
 
   static register(): CancellationToken {
-    const index = this.findIndex(this.allocatedTokens, (index: number) => { let item = Atomics.load(this.array, index); return !item || item === 2; });
-    if(index === -1 && !(this.buffer instanceof ArrayBuffer)) {
+    const index = this.findIndex(this.allocatedTokens, (index: number) =>  !Atomics.load(this.array, index));
+    if(index === -1 && SharedArrayBuffer && this.buffer instanceof SharedArrayBuffer) {
       throw new Error('Number of simultaneously used cancellation tokens exceeded the admissible limit');
     } else if (CancellationToken.withinArray(index)){
-      Atomics.store(CancellationToken.array, index, 0);
+      Atomics.store(CancellationToken.array, index, 2);
       this.allocatedTokens++;
     }
     return new CancellationToken(index);
   }
 
   release() {
-    Atomics.store(CancellationToken.array, this.tokenIndex, 2);
+    Atomics.store(CancellationToken.array, this.tokenIndex, 0);
   }
 
   cancel(): void {
@@ -35,7 +35,7 @@ export class CancellationToken {
 
   reset(): void {
     if (CancellationToken.withinArray(this.tokenIndex)) {
-      Atomics.store(CancellationToken.array, this.tokenIndex, 0);
+      Atomics.store(CancellationToken.array, this.tokenIndex, 2);
     }
   }
 
