@@ -13,8 +13,8 @@ export class CancellationToken {
   }
 
   static register(): CancellationToken {
-    const index = this.findIndex(this.allocatedTokens, (index: number) =>  index > -1 && !Atomics.load(this.array, index));
-    if(index === -1 && SharedArrayBuffer && this.buffer instanceof SharedArrayBuffer) {
+    const index = this.findIndex(this.allocatedTokens, (index: number) => !Atomics.load(this.array, index));
+    if(index === -1 && crossOriginIsolated && this.buffer instanceof SharedArrayBuffer) {
       throw new Error('Number of simultaneously used cancellation tokens exceeded the admissible limit');
     } else if (CancellationToken.withinArray(index)){
       Atomics.store(CancellationToken.array, index, 2);
@@ -56,10 +56,10 @@ export class CancellationToken {
   }
 
   private static findIndex(start: number, predicate: Function): number {
-    const arrayLength = this.MAX_NUMBER_OF_WORKERS;
+    const arrayLength = this.buffer.byteLength / Int32Array.BYTES_PER_ELEMENT;
     let unchecked = arrayLength;
     while(unchecked !== 0) {
-      if(start > arrayLength) { start %= arrayLength; }
+      if(start >= arrayLength) { start %= arrayLength; }
       if(predicate(start)) { return start; }
       else { start++; unchecked--; }
     }
