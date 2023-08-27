@@ -24,7 +24,9 @@ export class CancellationToken {
   }
 
   release() {
-    Atomics.store(CancellationToken.array, this.tokenIndex, 0);
+    if (CancellationToken.withinArray(this.tokenIndex)) {
+      Atomics.store(CancellationToken.array, this.tokenIndex, 0);
+    }
   }
 
   cancel(): void {
