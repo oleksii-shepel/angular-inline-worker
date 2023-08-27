@@ -13,7 +13,7 @@ export class CancellationToken {
   }
 
   static register(): CancellationToken {
-    const index = this.findIndex(this.allocatedTokens, (index: number) =>  !Atomics.load(this.array, index));
+    const index = this.findIndex(this.allocatedTokens, (index: number) =>  index > -1 && !Atomics.load(this.array, index));
     if(index === -1 && SharedArrayBuffer && this.buffer instanceof SharedArrayBuffer) {
       throw new Error('Number of simultaneously used cancellation tokens exceeded the admissible limit');
     } else if (CancellationToken.withinArray(index)){
