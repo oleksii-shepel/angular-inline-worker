@@ -1,6 +1,6 @@
 
 export class CancellationToken {
-  static MAX_NUMBER_OF_WORKERS = 128;
+  static MAX_NUMBER_OF_WORKERS = 32;
 
   private static shared: ArrayBuffer = crossOriginIsolated? new SharedArrayBuffer(Int32Array.BYTES_PER_ELEMENT * this.MAX_NUMBER_OF_WORKERS): new ArrayBuffer(0);
   private static array: Int32Array = new Int32Array(this.shared);
