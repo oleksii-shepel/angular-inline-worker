@@ -3,7 +3,7 @@ import { WebWorker, WorkerMethod, isWebpackBundlerPresent, isWorkerSupported } f
 
 export class InlineWorker extends WebWorker {
   private cancellationToken: CancellationToken | null;
-  private workerBody: string;
+  private workerbody: string;
   private onprogress: ((data: number) => void);
   private onnext: ((data: any) => void);
   private injected: string[];
@@ -25,7 +25,7 @@ export class InlineWorker extends WebWorker {
       funcbody = funcbody.replace(/\((?:.*,)(?:.*WEBPACK_IMPORTED_MODULE.*\.)(.*)\)(\(.*\))/g, "$1$2");
     }
 
-    this.workerBody = `self.onmessage=function(event){let __wcb__=new Int32Array(event.data.cancellationBuffer),__wti__=event.data.tokenIndex,__wc__=()=>__wti__>-1&&1===Atomics.load(__wcb__,__wti__),__wp__=new Promise((__wr__,__wrj__)=>{let __wrd__=!1,__wrjd__=!1,__wrst__=(${funcbody})(event.data.data,{cancelled:__wc__,next(e){self.postMessage({type:"next",value:e})},progress(e){self.postMessage({type:"progress",value:e})},done(e){__wrd__=!0,__wr__(e)},error(e){__wrjd__=!0,__wrj__(e)}});if(__wrst__ instanceof Promise)return __wrst__.then(__wr__,__wrj__);if(!__wrd__&&!__wrjd__&&void 0!==__wrst__)return __wr__(__wrst__),__wrst__;if(__wc__()){__wr__(void 0);return}}).then(e=>{__wc__()?self.postMessage({type:"cancelled",value:void 0}):self.postMessage({type:"done",value:e})}).catch(e=>self.postMessage({type:"error",error:e}))};`;
+    this.workerbody = `self.onmessage=function(event){let __wcb__=new Int32Array(event.data.cancellationBuffer),__wti__=event.data.tokenIndex,__wc__=()=>__wti__>-1&&1===Atomics.load(__wcb__,__wti__),__wp__=new Promise((__wr__,__wrj__)=>{let __wrd__=!1,__wrjd__=!1,__wrst__=(${funcbody})(event.data.data,{cancelled:__wc__,next(e){self.postMessage({type:"next",value:e})},progress(e){self.postMessage({type:"progress",value:e})},done(e){__wrd__=!0,__wr__(e)},error(e){__wrjd__=!0,__wrj__(e)}});if(__wrst__ instanceof Promise)return __wrst__.then(__wr__,__wrj__);if(!__wrd__&&!__wrjd__&&void 0!==__wrst__)return __wr__(__wrst__),__wrst__;if(__wc__()){__wr__(void 0);return}}).then(e=>{__wc__()?self.postMessage({type:"cancelled",value:void 0}):self.postMessage({type:"done",value:e})}).catch(e=>self.postMessage({type:"error",error:e}))};`;
     this.cancellationToken = this.promise = null; this.resolve = () => {}; this.reject = () => {};
     this.worker = null; this.injected  = []; this.onprogress = this.onnext = () => {};
   }
@@ -48,7 +48,7 @@ export class InlineWorker extends WebWorker {
   run(data?: any, transferList?: Transferable[]): Promise<any> {
     if(!this.promise) {
       this.cancellationToken = CancellationToken.register();
-      let blob = new Blob([this.workerBody].concat(this.injected), { type: 'application/javascript' });
+      let blob = new Blob([this.workerbody].concat(this.injected), { type: 'application/javascript' });
       this.worker = new Worker(URL.createObjectURL(blob));
       this.worker.postMessage({ data: data, cancellationBuffer: CancellationToken.buffer, tokenIndex: this.cancellationToken.index}, transferList as any);
       this.promise = new Promise((resolve, reject) => {
