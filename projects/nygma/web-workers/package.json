@@ -1,6 +1,6 @@
 {
   "name": "nygma-web-workers",
-  "version": "0.0.18",
+  "version": "0.0.19",
   "description": "Inline cancellable web-workers with progress notification",
   "main": "public-api.d.ts",
   "scripts": {
