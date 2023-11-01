@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "babel ./projects/nygma/web-workers --out-dir ./tests/nygma/web-workers --extensions \".ts, .js\" && karma start --grep ./tests/nygma/web-workers"
+    "test": "babel ./projects/nygma/web-workers --out-dir ./tests/nygma/web-workers --extensions \".ts, .js\" && karma start --grep ./tests/nygma/web-workers",
+    "minify": "node terser.mjs"
   },
   "private": true,
   "dependencies": {
@@ -51,6 +52,7 @@
     "karma-typescript": "^5.5.4",
     "karma-webpack": "^5.0.0",
     "ng-packagr": "^16.0.0",
+    "terser": "^5.24.0",
     "typescript": "~5.0.2",
     "webpack": "^5.88.2"
   }
