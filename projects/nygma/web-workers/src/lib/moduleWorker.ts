@@ -143,7 +143,7 @@ export class ModuleWorker extends WebWorker {
         this.worker = new Worker(URL.createObjectURL(blob));
         this.worker.postMessage({ data: data, cancellationBuffer: CancellationToken.buffer, tokenIndex: this.cancellationToken?.index}, transferList as any);
         this.promise = new Promise((resolve, reject) => {
-          this.resolve = resolve; this.reject = reject;
+          this.resolve = (arg: any) => resolve(arg); this.reject = (arg: any) => reject(arg);
           this.worker!.onmessage = (e: MessageEvent) => {
             if (e.data?.type === 'done') { this.promise = null; resolve(e.data.value); this.cancellationToken?.release(); }
             else if (e.data?.type === 'progress') { this.onprogress && this.onprogress(e.data.value); }
