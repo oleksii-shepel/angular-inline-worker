@@ -1,6 +1,6 @@
 /* global InlineWorker */
+import { InlineWorker } from '../lib/inlineWorker';
 
-import { InlineWorker, WorkerHelpers } from '../lib/inlineWorker';
 
 export function cube(n: any) {
   return n * n * n;
@@ -27,7 +27,7 @@ export function task(data: number, {progress, cancelled, done}: any) {
   done(true);
 }
 
-export function timer(data: number, {done, next, cancelled}: WorkerHelpers) {
+export function timer(data: number, {done, next, cancelled}: any) {
   next('timer set to ' + data + 'ms');
 
   let interval = setInterval(() => {
